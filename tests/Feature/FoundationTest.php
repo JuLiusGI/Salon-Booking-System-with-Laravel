@@ -7,16 +7,17 @@ use Tests\TestCase;
 
 class FoundationTest extends TestCase
 {
-    public function test_the_home_route_renders_the_welcome_inertia_page(): void
+    public function test_the_home_route_renders_the_public_home_page(): void
     {
         $response = $this->get('/');
 
         $response->assertOk();
         $response->assertInertia(
             fn (Assert $page) => $page
-                ->component('Welcome')
-                ->has('laravelVersion')
-                ->has('phpVersion')
+                ->component('Public/Home')
+                ->has('categories')
+                ->has('staff')
+                ->has('gallery')
         );
     }
 
