@@ -3,8 +3,9 @@
 A salon management and online booking application built as a Laravel monolith with
 React rendered through Inertia.
 
-> **Status:** Phase 3 complete. Schema, authentication, authorization, the public
-> salon website, and the design system exist. Booking is built in later phases.
+> **Status:** Phase 4 complete. Schema, authentication, authorization, the public
+> site, the design system, and catalogue and team management exist. Booking is
+> built in later phases.
 
 ## Stack
 
@@ -79,14 +80,26 @@ Seeded accounts all use the password `password`:
 All seeded names, contact details, and notes are invented for development. Never
 replace them with real personal data.
 
-### 5. Build frontend assets
+### 5. Link the storage directory
+
+Uploaded service images and staff photos are served from `public/storage`, which
+is a symlink. Create it once:
+
+```bash
+php artisan storage:link
+```
+
+Uploaded files themselves are git-ignored; only the directory placeholders are
+tracked.
+
+### 6. Build frontend assets
 
 ```bash
 npm run build     # production build
 npm run dev       # Vite dev server with hot reload
 ```
 
-### 6. Start the application
+### 7. Start the application
 
 ```bash
 php artisan serve
@@ -205,6 +218,49 @@ are never sent to the browser.
 It currently sends guests to registration, remembering the destination, and signed
 in users onward. **Phase 6 replaces its controller with the real booking flow**,
 so no link needs to change.
+
+## Catalogue and team management
+
+Admins manage the catalogue at `/admin/categories`, `/admin/services`, and the
+team at `/admin/staff`. Everything the public site shows is driven from here.
+
+Rules worth knowing:
+
+- **Slugs are generated, and de-duplicated automatically.** Naming a second
+  category "Hair" produces `hair-2` rather than failing.
+- **Admin URLs bind by id, not slug.** Renaming a record must not change the URL
+  of the page you are editing.
+- **A category holding services cannot be deleted.** Move or delete its services
+  first, so services never lose their grouping silently.
+- **Services and staff are soft deleted.** Past appointments keep their foreign
+  key, and their price and duration snapshot keeps history readable.
+- **Editing a service never rewrites history.** Price and duration changes apply
+  to new bookings only.
+- **Only bookable, active staff can be assigned to a service**, checked again at
+  submit time in case someone was deactivated while the form was open.
+- **Receptionists cannot be marked bookable.** They manage the diary rather than
+  appearing in it.
+- **Adding a team member creates their login and their salon profile together**,
+  in one transaction. Removing one soft deletes the profile and disables the
+  login, keeping their history.
+- **Changing a role on the users screen keeps the staff record in step.** A
+  promotion creates one; a demotion stands it down rather than deleting it.
+- Every create, update, and delete is written to `audit_logs`.
+
+### Image handling
+
+Service images, category images, and staff photos are stored on the `public`
+disk through Laravel's filesystem.
+
+- **The original filename is never used.** Laravel generates a random hash name
+  and derives the extension from the detected type, so `invoice.php.jpg` cannot
+  land on disk as something executable, and two uploads of `photo.jpg` cannot
+  overwrite each other.
+- Accepted types are JPEG, PNG, and WebP, up to 4 MB and 5000 pixels per side.
+- Replacing an image writes the new file first and only then deletes the old one,
+  so a failed write never destroys the existing image.
+- A missing or deleted file renders a caption placeholder rather than a broken
+  image.
 
 ## Authentication and roles
 
