@@ -36,7 +36,7 @@ class FoundationTest extends TestCase
         // Shared data is sent on every response, so its shape is deliberately
         // pinned here. Adding a key must be a conscious decision, not a drift.
         $response->assertInertia(
-            fn (Assert $page) => $page->hasAll(['name', 'flash'])
+            fn (Assert $page) => $page->hasAll(['name', 'auth', 'flash'])
                 ->has('flash', fn (Assert $flash) => $flash->hasAll(['success', 'error']))
         );
     }
