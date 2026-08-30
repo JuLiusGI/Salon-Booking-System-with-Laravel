@@ -3,8 +3,8 @@
 A salon management and online booking application built as a Laravel monolith with
 React rendered through Inertia.
 
-> **Status:** Phase 1 complete. Domain schema and models exist; application
-> features are built in later phases.
+> **Status:** Phase 2 complete. Schema, models, authentication, and role-based
+> authorization exist. Booking features are built in later phases.
 
 ## Stack
 
@@ -150,6 +150,50 @@ The `@/` import alias resolves to `resources/js/` in both Vite and TypeScript.
 - Validation and authorization are enforced server-side.
 - Inertia shared props are deliberately scoped and must not carry personal data.
 - Migrations are the source of schema truth; do not edit the schema by hand.
+
+## Authentication and roles
+
+Authentication uses Laravel's built-in session guard and password broker directly
+rather than a starter kit, so it fits the existing TypeScript and Inertia setup.
+
+Roles are a single `role` column on `users`, cast to the `UserRole` enum:
+
+| Role | Can reach |
+| --- | --- |
+| `admin` | Everything, including `/admin/*` |
+| `receptionist` | Dashboard and profile (operational screens come later) |
+| `stylist` | Dashboard and profile (schedule views come later) |
+| `customer` | Dashboard and profile |
+
+Authorization is enforced server-side in three layers:
+
+1. `auth` and `active` middleware on every protected route group.
+2. The `role:` middleware as a coarse gate on whole groups, e.g. `role:admin`.
+3. `UserPolicy` for per-record decisions inside controllers.
+
+Navigation is filtered by role in `AppLayout.tsx` for usability only. **Hiding a
+link is never a security boundary** — every route is independently protected.
+
+Security behaviour worth knowing:
+
+- Login is rate limited to 5 attempts per email and IP combination.
+- Password reset and the reset request endpoint are throttled to 6 per minute.
+- The session id is regenerated on login and invalidated on logout.
+- A password reset rotates the remember token, killing old "remember me" cookies.
+- Forgot-password returns the same response for unknown addresses, so it cannot
+  be used to discover which emails have accounts.
+- `role` and `is_active` are not mass assignable; both are administrative actions.
+- Role changes and account activation are written to `audit_logs`.
+- An admin cannot change their own role, deactivate themselves, or remove the
+  last remaining active administrator.
+
+Email verification is **not** enabled. `MASTER_SPEC` section 16 makes it
+conditional, and it is not in the Phase 2 task list, so registration completes
+without it. `User` does not implement `MustVerifyEmail`; enabling it later means
+adding that interface and the verification routes.
+
+In local development `MAIL_MAILER=log`, so password reset links appear in
+`storage/logs/laravel.log` rather than being delivered.
 
 ## Time and timezone
 
