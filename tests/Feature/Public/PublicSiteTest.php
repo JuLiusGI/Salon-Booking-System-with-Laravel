@@ -100,7 +100,7 @@ class PublicSiteTest extends TestCase
         $this->get('/team')->assertInertia(
             fn (Assert $page) => $page->has(
                 'staff.0',
-                fn (Assert $member) => $member->hasAll(['id', 'name', 'title', 'bio'])
+                fn (Assert $member) => $member->hasAll(['id', 'name', 'title', 'bio', 'photo_url'])
             )
         );
     }
