@@ -85,9 +85,11 @@ class PublicPageController extends Controller
                 'name' => $category->name,
                 'slug' => $category->slug,
                 'description' => $category->description,
+                'image_url' => $category->imageUrl(),
                 'services' => $category->services->map(fn ($service) => [
                     'id' => $service->id,
                     'name' => $service->name,
+                    'image_url' => $service->imageUrl(),
                     'description' => $service->description,
                     'duration_minutes' => $service->duration_minutes,
                     'price' => $service->price,
@@ -102,7 +104,7 @@ class PublicPageController extends Controller
     {
         return Staff::query()
             ->bookable()
-            ->with('user:id,name')
+            ->with('user:id,name,avatar_path')
             ->orderBy('display_order')
             ->get()
             ->map(fn (Staff $member) => [
@@ -110,6 +112,7 @@ class PublicPageController extends Controller
                 'name' => $member->user->name,
                 'title' => $member->title,
                 'bio' => $member->bio,
+                'photo_url' => $member->photoUrl(),
             ]);
     }
 

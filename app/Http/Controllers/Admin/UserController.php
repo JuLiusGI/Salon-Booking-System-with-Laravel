@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateUserRoleRequest;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
+use App\Services\Staff\StaffProvisioner;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -66,6 +67,10 @@ class UserController extends Controller
 
         $user->role = $next;
         $user->save();
+
+        // Keep the staff record in step, so a promotion actually makes someone
+        // schedulable and a demotion actually removes them from booking.
+        app(StaffProvisioner::class)->syncForRole($user, $next);
 
         app(AuditLogger::class)->record('user.role_changed', $user, [
             'from' => $previous->value,
