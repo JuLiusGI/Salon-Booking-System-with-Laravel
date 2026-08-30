@@ -31,11 +31,16 @@ export default function Team({ staff }: PageProps<{ staff: PublicStaff[] }>) {
                                 key={member.id}
                                 className="flex flex-col rounded-2xl border border-line bg-surface p-8"
                             >
-                                <div
-                                    aria-hidden="true"
-                                    className="flex h-20 w-20 items-center justify-center rounded-full bg-canvas font-display text-2xl text-ink"
-                                >
-                                    {member.name.charAt(0)}
+                                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-canvas font-display text-2xl text-ink">
+                                    {member.photo_url ? (
+                                        <img
+                                            src={member.photo_url}
+                                            alt={`${member.name}, ${member.title ?? 'salon team member'}`}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <span aria-hidden="true">{member.name.charAt(0)}</span>
+                                    )}
                                 </div>
 
                                 <h2 className="mt-6 text-xl text-ink">{member.name}</h2>

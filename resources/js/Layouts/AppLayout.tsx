@@ -17,6 +17,9 @@ interface NavItem {
  */
 const NAV_ITEMS: NavItem[] = [
     { label: 'Dashboard', href: '/dashboard', roles: ['admin', 'receptionist', 'stylist', 'customer'] },
+    { label: 'Categories', href: '/admin/categories', roles: ['admin'] },
+    { label: 'Services', href: '/admin/services', roles: ['admin'] },
+    { label: 'Team', href: '/admin/staff', roles: ['admin'] },
     { label: 'Users', href: '/admin/users', roles: ['admin'] },
     { label: 'Profile', href: '/profile', roles: ['admin', 'receptionist', 'stylist', 'customer'] },
 ];
@@ -50,7 +53,7 @@ export default function AppLayout({ title, children }: AppLayoutProps) {
                                     Salon Booking
                                 </Link>
 
-                                <nav aria-label="Account" className="flex items-center gap-1">
+                                <nav aria-label="Account" className="flex flex-wrap items-center gap-1">
                                     {visible.map((item) => (
                                         <Link
                                             key={item.href}

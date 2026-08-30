@@ -50,6 +50,7 @@ export interface PublicService {
     description: string | null;
     duration_minutes: number;
     price: string;
+    image_url: string | null;
 }
 
 export interface PublicCategory {
@@ -57,6 +58,7 @@ export interface PublicCategory {
     name: string;
     slug: string;
     description: string | null;
+    image_url: string | null;
     services: PublicService[];
 }
 
@@ -65,6 +67,7 @@ export interface PublicStaff {
     name: string;
     title: string | null;
     bio: string | null;
+    photo_url: string | null;
 }
 
 export interface GalleryItem {

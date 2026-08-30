@@ -164,11 +164,16 @@ export default function Home({ categories, staff, gallery }: PageProps<HomeProps
                         <ul className="mx-auto mt-14 grid max-w-4xl gap-8 sm:grid-cols-3">
                             {staff.map((member) => (
                                 <li key={member.id} className="text-center">
-                                    <div
-                                        aria-hidden="true"
-                                        className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-canvas font-display text-2xl text-ink"
-                                    >
-                                        {member.name.charAt(0)}
+                                    <div className="mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-canvas font-display text-2xl text-ink">
+                                        {member.photo_url ? (
+                                            <img
+                                                src={member.photo_url}
+                                                alt={`${member.name}, ${member.title ?? 'salon team member'}`}
+                                                className="h-full w-full object-cover"
+                                            />
+                                        ) : (
+                                            <span aria-hidden="true">{member.name.charAt(0)}</span>
+                                        )}
                                     </div>
                                     <h3 className="mt-5 text-lg text-ink">{member.name}</h3>
                                     {member.title && <p className="mt-1 text-sm text-ink-muted">{member.title}</p>}
