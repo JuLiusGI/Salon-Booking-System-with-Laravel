@@ -23,8 +23,13 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
+        <!-- Tests run against MySQL, not SQLite, so that schema constraints,
+             foreign keys, and row-level locking behave exactly as they do in the
+             real application. Booking conflict protection cannot be proven on
+             SQLite. Create the database once with:
+             mysql -u root -e "CREATE DATABASE salon_booking_test" -->
+        <env name="DB_CONNECTION" value="mysql"/>
+        <env name="DB_DATABASE" value="salon_booking_test"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
