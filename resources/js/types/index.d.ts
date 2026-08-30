@@ -41,3 +41,41 @@ export interface Paginated<T> {
     from: number | null;
     to: number | null;
 }
+
+/* Public website payloads --------------------------------------------------- */
+
+export interface PublicService {
+    id: number;
+    name: string;
+    description: string | null;
+    duration_minutes: number;
+    price: string;
+}
+
+export interface PublicCategory {
+    id: number;
+    name: string;
+    slug: string;
+    description: string | null;
+    services: PublicService[];
+}
+
+export interface PublicStaff {
+    id: number;
+    name: string;
+    title: string | null;
+    bio: string | null;
+}
+
+export interface GalleryItem {
+    id: number;
+    title: string | null;
+    alt_text: string | null;
+}
+
+export interface SalonHourRow {
+    day_of_week: number;
+    opens_at: string | null;
+    closes_at: string | null;
+    is_closed: boolean;
+}

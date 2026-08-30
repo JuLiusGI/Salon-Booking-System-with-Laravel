@@ -14,11 +14,14 @@ export default function FlashMessage() {
         <div
             role="status"
             aria-live="polite"
-            className={`mb-6 rounded-md border px-4 py-3 text-sm ${
-                isError ? 'border-red-200 bg-red-50 text-red-800' : 'border-green-200 bg-green-50 text-green-800'
+            className={`mb-6 flex items-start gap-3 rounded-lg border px-4 py-3 text-sm ${
+                isError ? 'border-red-300 bg-red-50 text-red-900' : 'border-support/50 bg-canvas-soft text-ink'
             }`}
         >
-            {flash.error ?? flash.success}
+            {/* A word, not just a colour, so the meaning survives for anyone who
+                cannot distinguish the two backgrounds. */}
+            <strong className="font-semibold">{isError ? 'Error:' : 'Done:'}</strong>
+            <span>{flash.error ?? flash.success}</span>
         </div>
     );
 }

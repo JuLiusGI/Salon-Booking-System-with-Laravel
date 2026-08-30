@@ -1,20 +1,49 @@
-import type { ButtonHTMLAttributes } from 'react';
+import { Link } from '@inertiajs/react';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
+
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
+type Size = 'md' | 'lg';
+
+const BASE =
+    'inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60';
+
+const VARIANTS: Record<Variant, string> = {
+    primary: 'bg-primary text-ink-inverted hover:bg-primary-hover',
+    secondary: 'bg-surface text-ink border border-line-strong hover:bg-canvas-soft',
+    ghost: 'text-secondary hover:text-secondary-hover underline underline-offset-4',
+    danger: 'bg-red-700 text-white hover:bg-red-800',
+};
+
+const SIZES: Record<Size, string> = {
+    md: 'px-5 py-2.5 text-sm',
+    lg: 'px-7 py-3.5 text-base',
+};
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'danger';
+    variant?: Variant;
+    size?: Size;
 }
 
-const VARIANTS = {
-    primary: 'bg-neutral-900 text-white hover:bg-neutral-800 focus:ring-neutral-400',
-    secondary: 'border border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50 focus:ring-neutral-300',
-    danger: 'bg-red-600 text-white hover:bg-red-500 focus:ring-red-300',
-} as const;
+export default function Button({ variant = 'primary', size = 'md', className = '', ...props }: ButtonProps) {
+    return <button className={`${BASE} ${VARIANTS[variant]} ${SIZES[size]} ${className}`} {...props} />;
+}
 
-export default function Button({ variant = 'primary', className = '', ...props }: ButtonProps) {
+interface ButtonLinkProps {
+    href: string;
+    variant?: Variant;
+    size?: Size;
+    className?: string;
+    children: ReactNode;
+}
+
+/**
+ * The same visual treatment for navigation. Rendered as a real anchor so it
+ * keeps link semantics: focusable, activatable with Enter, openable in a new tab.
+ */
+export function ButtonLink({ href, variant = 'primary', size = 'md', className = '', children }: ButtonLinkProps) {
     return (
-        <button
-            className={`inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition outline-none focus:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-60 ${VARIANTS[variant]} ${className}`}
-            {...props}
-        />
+        <Link href={href} className={`${BASE} ${VARIANTS[variant]} ${SIZES[size]} ${className}`}>
+            {children}
+        </Link>
     );
 }

@@ -33,6 +33,8 @@ createInertiaApp({
     },
 
     progress: {
-        color: '#0A3323',
+        // Read from the design tokens so the loading bar cannot drift away from
+        // the palette. Falls back only if the stylesheet has not applied yet.
+        color: getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim() || '#0a3323',
     },
 });

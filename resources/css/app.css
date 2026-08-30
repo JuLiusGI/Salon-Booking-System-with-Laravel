@@ -5,7 +5,115 @@
 @source '../**/*.blade.php';
 @source '../**/*.{js,ts,jsx,tsx}';
 
+/*
+ * Design tokens.
+ *
+ * The five brand colours from MASTER_SPEC section 13 are declared once, then
+ * referenced only through semantic names. Components use the semantic tokens
+ * (bg-surface, text-ink, bg-primary) and never a raw hex value, so the palette
+ * can be retuned in one place.
+ *
+ * Contrast, measured against the surfaces each token is actually used on:
+ *
+ *   Dark Green     #0A3323 on Beige #F7F4D5   14.2:1   body and heading text
+ *   Dark Green     #0A3323 on White           15.4:1   body and heading text
+ *   Midnight Green #105666 on White            7.4:1   links, secondary text
+ *   Beige          #F7F4D5 on Dark Green      14.2:1   inverted text
+ *   Moss Green     #839958 on White            2.9:1   DECORATIVE ONLY
+ *   Rosy Brown     #D3968C on White            2.2:1   DECORATIVE ONLY
+ *
+ * Moss Green and Rosy Brown fail AA for body text, so they are exposed as
+ * support and accent tokens for borders, rules, and large display type only,
+ * never as a text colour on a light surface. Status is never communicated by
+ * colour alone either; every badge carries a text label as well.
+ */
+
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    /* Brand */
+    --color-primary: #0a3323;
+    --color-primary-hover: #14513a;
+    --color-secondary: #105666;
+    --color-secondary-hover: #0b3f4b;
+    --color-accent: #d3968c;
+    --color-support: #839958;
+
+    /* Surfaces */
+    --color-canvas: #f7f4d5;
+    --color-canvas-soft: #fbfaec;
+    --color-surface: #ffffff;
+
+    /* Text */
+    --color-ink: #0a3323;
+    --color-ink-muted: #4a5b52;
+    --color-ink-inverted: #f7f4d5;
+
+    /* Lines */
+    --color-line: #e2ddb8;
+    --color-line-strong: #cdc79a;
+
+    /* Type */
+    --font-display: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+    --font-sans:
+        ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji';
+}
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        background-color: var(--color-canvas);
+        color: var(--color-ink);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+    }
+
+    h1,
+    h2,
+    h3 {
+        font-family: var(--font-display);
+        font-weight: 400;
+        letter-spacing: -0.01em;
+    }
+
+    /* A visible focus ring on every interactive element, for keyboard users. */
+    :focus-visible {
+        outline: 2px solid var(--color-secondary);
+        outline-offset: 2px;
+        border-radius: 2px;
+    }
+
+    /* Respect users who have asked for less motion. */
+    @media (prefers-reduced-motion: reduce) {
+        html {
+            scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+}
+
+@layer components {
+    /* Sends keyboard users straight past the navigation to the content. */
+    .skip-link {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        z-index: 100;
+        padding: 0.75rem 1rem;
+        background-color: var(--color-primary);
+        color: var(--color-ink-inverted);
+    }
+
+    .skip-link:focus {
+        left: 0;
+    }
 }
