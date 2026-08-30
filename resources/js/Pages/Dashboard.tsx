@@ -25,13 +25,13 @@ export default function Dashboard({ auth, role }: PageProps<{ role: UserRole }>)
 
     return (
         <AppLayout title={`Welcome, ${auth.user?.name ?? ''}`}>
-            <div className="rounded-lg border border-neutral-200 bg-white p-6">
-                <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">Signed in as</p>
-                <p className="mt-1 text-lg font-semibold text-neutral-900">{summary.heading}</p>
-                <p className="mt-2 text-sm text-neutral-600">{summary.description}</p>
+            <div className="rounded-2xl border border-line bg-surface p-6">
+                <p className="text-xs font-medium tracking-wide text-ink-muted uppercase">Signed in as</p>
+                <p className="mt-1 text-lg font-semibold text-ink">{summary.heading}</p>
+                <p className="mt-2 text-sm text-ink-muted">{summary.description}</p>
             </div>
 
-            <p className="mt-6 text-sm text-neutral-500">
+            <p className="mt-6 text-sm text-ink-muted">
                 Booking, scheduling, and reporting features are added in later phases.
             </p>
         </AppLayout>

@@ -70,7 +70,7 @@ export default function Index({ auth, users, filters, roles }: PageProps<UsersIn
                 </div>
 
                 <div className="space-y-1.5">
-                    <label htmlFor="role-filter" className="block text-sm font-medium text-neutral-800">
+                    <label htmlFor="role-filter" className="block text-sm font-medium text-ink">
                         Role
                     </label>
                     <select
@@ -83,7 +83,7 @@ export default function Index({ auth, users, filters, roles }: PageProps<UsersIn
                                 { preserveState: true, replace: true },
                             )
                         }
-                        className="rounded-md border border-neutral-300 px-3 py-2 text-sm shadow-sm"
+                        className="rounded-md border border-line-strong px-3 py-2 text-sm shadow-sm"
                     >
                         <option value="">All roles</option>
                         {roles.map((role) => (
@@ -99,9 +99,9 @@ export default function Index({ auth, users, filters, roles }: PageProps<UsersIn
                 </Button>
             </form>
 
-            <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+            <div className="overflow-x-auto rounded-2xl border border-line bg-surface">
                 <table className="w-full text-left text-sm">
-                    <thead className="border-b border-neutral-200 bg-neutral-50 text-xs tracking-wide text-neutral-500 uppercase">
+                    <thead className="border-b border-line bg-canvas text-xs tracking-wide text-ink-muted uppercase">
                         <tr>
                             <th scope="col" className="px-4 py-3 font-medium">
                                 Name
@@ -117,10 +117,10 @@ export default function Index({ auth, users, filters, roles }: PageProps<UsersIn
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-neutral-100">
+                    <tbody className="divide-y divide-line">
                         {users.data.length === 0 && (
                             <tr>
-                                <td colSpan={4} className="px-4 py-10 text-center text-neutral-500">
+                                <td colSpan={4} className="px-4 py-10 text-center text-ink-muted">
                                     No users match these filters.
                                 </td>
                             </tr>
@@ -132,18 +132,18 @@ export default function Index({ auth, users, filters, roles }: PageProps<UsersIn
 
                             return (
                                 <tr key={user.id}>
-                                    <td className="px-4 py-3 font-medium text-neutral-900">
+                                    <td className="px-4 py-3 font-medium text-ink">
                                         {user.name}
-                                        {isSelf && <span className="ml-2 text-xs text-neutral-500">(you)</span>}
+                                        {isSelf && <span className="ml-2 text-xs text-ink-muted">(you)</span>}
                                     </td>
-                                    <td className="px-4 py-3 text-neutral-600">{user.email}</td>
+                                    <td className="px-4 py-3 text-ink-muted">{user.email}</td>
                                     <td className="px-4 py-3">
                                         <select
                                             aria-label={'Role for ' + user.name}
                                             value={user.role}
                                             disabled={isSelf}
                                             onChange={(e) => changeRole(user.id, e.target.value as UserRole)}
-                                            className="rounded-md border border-neutral-300 px-2 py-1 text-sm disabled:cursor-not-allowed disabled:bg-neutral-100"
+                                            className="rounded-md border border-line-strong px-2 py-1 text-sm disabled:cursor-not-allowed disabled:bg-canvas"
                                         >
                                             {roles.map((role) => (
                                                 <option key={role.value} value={role.value}>
@@ -169,7 +169,7 @@ export default function Index({ auth, users, filters, roles }: PageProps<UsersIn
                 </table>
             </div>
 
-            <p className="mt-4 text-sm text-neutral-500">
+            <p className="mt-4 text-sm text-ink-muted">
                 Showing {users.from ?? 0}&ndash;{users.to ?? 0} of {users.total}
             </p>
         </AppLayout>

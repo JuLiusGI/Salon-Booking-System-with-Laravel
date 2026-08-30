@@ -50,8 +50,8 @@ export default function Edit({ auth, profile }: PageProps<{ profile: CustomerPro
     return (
         <AppLayout title="Profile">
             <div className="space-y-6">
-                <section className="rounded-lg border border-neutral-200 bg-white p-6">
-                    <h2 className="text-base font-semibold text-neutral-900">Account details</h2>
+                <section className="rounded-2xl border border-line bg-surface p-6">
+                    <h2 className="text-base font-semibold text-ink">Account details</h2>
 
                     <form onSubmit={submitDetails} className="mt-4 max-w-lg space-y-4">
                         <Field
@@ -118,8 +118,8 @@ export default function Edit({ auth, profile }: PageProps<{ profile: CustomerPro
                     </form>
                 </section>
 
-                <section className="rounded-lg border border-neutral-200 bg-white p-6">
-                    <h2 className="text-base font-semibold text-neutral-900">Change password</h2>
+                <section className="rounded-2xl border border-line bg-surface p-6">
+                    <h2 className="text-base font-semibold text-ink">Change password</h2>
 
                     <form onSubmit={submitPassword} className="mt-4 max-w-lg space-y-4">
                         <Field
