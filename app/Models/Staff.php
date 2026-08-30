@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Media\ImageStorage;
 use Database\Factories\StaffFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -70,6 +71,15 @@ class Staff extends Model
     /**
      * Whether this staff member is allowed to perform a given service.
      */
+    /**
+     * Staff portraits are stored on the user record alongside every other
+     * account avatar, so there is only one place a person's photo can live.
+     */
+    public function photoUrl(): ?string
+    {
+        return app(ImageStorage::class)->url($this->user?->avatar_path);
+    }
+
     public function canPerform(Service $service): bool
     {
         return $this->services()->whereKey($service->getKey())->exists();

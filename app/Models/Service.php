@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasSlug;
+use App\Services\Media\ImageStorage;
 use Database\Factories\ServiceFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Service extends Model
 {
     /** @use HasFactory<ServiceFactory> */
-    use HasFactory, SoftDeletes;
+    use HasFactory, HasSlug, SoftDeletes;
 
     protected $fillable = [
         'service_category_id',
@@ -53,6 +55,11 @@ class Service extends Model
     public function appointmentItems(): HasMany
     {
         return $this->hasMany(AppointmentItem::class);
+    }
+
+    public function imageUrl(): ?string
+    {
+        return app(ImageStorage::class)->url($this->image_path);
     }
 
     public function getRouteKeyName(): string
