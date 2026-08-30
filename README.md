@@ -3,8 +3,8 @@
 A salon management and online booking application built as a Laravel monolith with
 React rendered through Inertia.
 
-> **Status:** Phase 2 complete. Schema, models, authentication, and role-based
-> authorization exist. Booking features are built in later phases.
+> **Status:** Phase 3 complete. Schema, authentication, authorization, the public
+> salon website, and the design system exist. Booking is built in later phases.
 
 ## Stack
 
@@ -150,6 +150,61 @@ The `@/` import alias resolves to `resources/js/` in both Vite and TypeScript.
 - Validation and authorization are enforced server-side.
 - Inertia shared props are deliberately scoped and must not carry personal data.
 - Migrations are the source of schema truth; do not edit the schema by hand.
+
+## Design system
+
+Colour lives in exactly one place: the `@theme` block in `resources/css/app.css`.
+The five brand colours from `MASTER_SPEC` section 13 are declared there once and
+then referenced only through semantic tokens, so components never contain a raw
+hex value. `DesignSystemTest` enforces this.
+
+| Token | Colour | Used for |
+| --- | --- | --- |
+| `primary` | Dark Green `#0A3323` | Primary buttons, footer, headings |
+| `secondary` | Midnight Green `#105666` | Links, eyebrow labels, focus ring |
+| `accent` | Rosy Brown `#D3968C` | Decorative rules and shapes only |
+| `support` | Moss Green `#839958` | Decorative, hover borders only |
+| `canvas` | Beige `#F7F4D5` | Page background |
+| `surface` | White | Cards, headers, panels |
+| `ink` / `ink-muted` / `ink-inverted` | | Text |
+| `line` / `line-strong` | | Borders and dividers |
+
+**Moss Green and Rosy Brown are decorative only.** At 2.9:1 and 2.2:1 against
+white they fail WCAG AA for body text, so they are never used as a text colour on
+a light surface. Every contrast ratio is documented in the stylesheet.
+
+Status is never signalled by colour alone. Flash messages carry a "Done"/"Error"
+word, today's row on the opening hours table is labelled "Today", and form errors
+always render their message.
+
+Typography uses `font-display` (a serif stack) for headings and `font-sans` for
+body text. Both are system stacks, so no webfont is downloaded and there is no new
+dependency; swapping in a licensed face later means changing one token.
+
+Accessibility built into the base layer: a skip link on every layout, a visible
+`:focus-visible` ring, and a `prefers-reduced-motion` block that disables
+animation and smooth scrolling.
+
+## Public website
+
+| Route | Page |
+| --- | --- |
+| `/` | Home |
+| `/services` | Full service menu, grouped by category |
+| `/team` | Bookable stylists |
+| `/gallery` | Salon gallery |
+| `/about` | About |
+| `/contact` | Address, phone, and opening hours |
+| `/book` | Booking call-to-action target |
+
+All public pages read live data and hide anything inactive. The team page exposes
+only name, title, and bio; staff email addresses, phone numbers, and hire dates
+are never sent to the browser.
+
+`/book` is the single stable target for every "Book appointment" call to action.
+It currently sends guests to registration, remembering the destination, and signed
+in users onward. **Phase 6 replaces its controller with the real booking flow**,
+so no link needs to change.
 
 ## Authentication and roles
 
