@@ -3,7 +3,8 @@
 A salon management and online booking application built as a Laravel monolith with
 React rendered through Inertia.
 
-> **Status:** Phase 0 (foundation) complete. No business modules are implemented yet.
+> **Status:** Phase 1 complete. Domain schema and models exist; application
+> features are built in later phases.
 
 ## Stack
 
@@ -60,11 +61,23 @@ Or create `salon_booking` through phpMyAdmin at <http://localhost/phpmyadmin>.
 php artisan migrate
 ```
 
-Seed data is introduced in Phase 1:
+Then load realistic development data:
 
 ```bash
-php artisan db:seed
+php artisan migrate:fresh --seed
 ```
+
+Seeded accounts all use the password `password`:
+
+| Role | Email |
+| --- | --- |
+| Admin | `admin@salon.test` |
+| Receptionist | `front.desk@salon.test` |
+| Stylist | `marisol@salon.test` |
+| Customer | `customer@salon.test` |
+
+All seeded names, contact details, and notes are invented for development. Never
+replace them with real personal data.
 
 ### 5. Build frontend assets
 
@@ -95,8 +108,20 @@ Run `npm run dev` in a second terminal while developing so assets hot-reload.
 | `npm run dev` | Vite dev server |
 | `php artisan migrate:fresh` | Drop all tables and re-migrate |
 
-Tests run against an in-memory SQLite database (see `phpunit.xml`) and never touch
-the local MySQL data.
+### Test database
+
+Tests run against **MySQL**, not SQLite, so that foreign keys, schema constraints,
+and row-level locking behave exactly as they do in the real application. Booking
+conflict protection cannot be proven on SQLite.
+
+Create the test database once:
+
+```bash
+mysql -u root -e "CREATE DATABASE salon_booking_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+```
+
+The suite migrates and rolls back inside transactions, so it never touches your
+development data in `salon_booking`.
 
 ## Project structure
 
@@ -108,6 +133,13 @@ resources/js/Pages/                             Inertia page components
 resources/js/types/                             Shared TypeScript definitions
 routes/web.php                                  Web routes
 tests/Feature/, tests/Unit/                     Test suites
+
+app/Enums/                                      Domain enums, including the
+                                                appointment lifecycle rules
+app/Models/                                     Eloquent models and relationships
+database/migrations/                            Schema source of truth
+database/factories/, database/seeders/          Development data
+config/salon.php                                Salon timezone and booking defaults
 ```
 
 The `@/` import alias resolves to `resources/js/` in both Vite and TypeScript.
@@ -118,3 +150,11 @@ The `@/` import alias resolves to `resources/js/` in both Vite and TypeScript.
 - Validation and authorization are enforced server-side.
 - Inertia shared props are deliberately scoped and must not carry personal data.
 - Migrations are the source of schema truth; do not edit the schema by hand.
+
+## Time and timezone
+
+All datetimes are **stored in UTC**. `config/salon.php` holds the salon's own
+timezone (`SALON_TIMEZONE`, default `Asia/Manila`), which is the only timezone
+that opening hours, staff schedules, and availability slots are interpreted in.
+Changing it changes presentation and schedule resolution; it does not rewrite
+stored data.
