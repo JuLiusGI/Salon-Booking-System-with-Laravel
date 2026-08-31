@@ -34,7 +34,7 @@ class AppointmentController extends Controller
 
     public function index(Request $request): Response
     {
-        $this->authorize('viewAny', Appointment::class);
+        $this->authorize('viewDiary', Appointment::class);
 
         $timezone = config('salon.timezone');
         $user = $request->user();

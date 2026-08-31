@@ -28,7 +28,7 @@ class CalendarController extends Controller
 
     public function __invoke(Request $request): Response
     {
-        $this->authorize('viewAny', Appointment::class);
+        $this->authorize('viewDiary', Appointment::class);
 
         $timezone = config('salon.timezone');
         $user = $request->user();

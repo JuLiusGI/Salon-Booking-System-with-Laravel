@@ -55,6 +55,12 @@ class CalendarTest extends TestCase
 
         // A stylist reaches the diary too, but sees only their own work.
         $this->actingAs($this->rosteredStylist()->user)->get($uri)->assertOk();
+
+        // A customer must not reach a staff screen at all. Scoping the data to
+        // their own appointments is not the same as denying the screen.
+        $this->actingAs(User::factory()->role(UserRole::Customer)->create())
+            ->get($uri)
+            ->assertForbidden();
     }
 
     #[DataProvider('diaryPages')]

@@ -17,9 +17,29 @@ use App\Services\Booking\BookingRuleChecker;
  */
 class AppointmentPolicy
 {
+    /**
+     * Listing appointments at all.
+     *
+     * True for everyone, because a customer listing their own history is also a
+     * list. What each person actually sees is narrowed by
+     * Appointment::visibleTo().
+     */
     public function viewAny(User $actor): bool
     {
         return true;
+    }
+
+    /**
+     * Reaching the salon's diary: the calendar, the appointment list, and the
+     * check-in desk.
+     *
+     * Deliberately separate from viewAny. Sharing one ability let a customer
+     * open staff screens; the data was still scoped to their own appointments,
+     * but the screens were never theirs to reach.
+     */
+    public function viewDiary(User $actor): bool
+    {
+        return $actor->isStaffMember();
     }
 
     public function view(User $actor, Appointment $appointment): bool
