@@ -30,6 +30,8 @@ const NAV_ITEMS: NavItem[] = [
     { label: 'Exceptions', href: '/admin/schedule/exceptions', roles: ['admin'] },
     { label: 'Rules', href: '/admin/schedule/rules', roles: ['admin'] },
     { label: 'Users', href: '/admin/users', roles: ['admin'] },
+    { label: 'Reports', href: '/manage/reports', roles: ['admin', 'receptionist'] },
+    { label: 'Notifications', href: '/notifications', roles: ['admin', 'receptionist', 'stylist', 'customer'] },
     { label: 'Profile', href: '/profile', roles: ['admin', 'receptionist', 'stylist', 'customer'] },
 ];
 
