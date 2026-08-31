@@ -3,8 +3,9 @@
 A salon management and online booking application built as a Laravel monolith with
 React rendered through Inertia.
 
-> **Status:** Phase 6 complete. Customers can book online end to end. Operational
-> appointment management, the calendar, and status transitions arrive in Phase 7.
+> **Status:** Phase 7 complete. Customers book online; the salon runs its diary
+> with a calendar, status transitions, cancellation, and rescheduling. Customer
+> records, QR, notifications, and reporting arrive in later phases.
 
 ## Stack
 
@@ -217,6 +218,75 @@ are never sent to the browser.
 It currently sends guests to registration, remembering the destination, and signed
 in users onward. **Phase 6 replaces its controller with the real booking flow**,
 so no link needs to change.
+
+## Running the diary
+
+| Route | Purpose |
+| --- | --- |
+| `/manage/calendar` | Day, week, and month views |
+| `/manage/appointments` | Filterable list |
+| `/manage/appointments/new` | Book on a customer's behalf |
+| `/manage/appointments/{reference}` | Detail, status actions, internal notes |
+| `/appointments/{reference}/reschedule` | Move an appointment |
+
+### Who sees what
+
+`Appointment::visibleTo()` defines this once, and every list, calendar, and export
+uses it rather than re-deriving the rule:
+
+| Role | Sees |
+| --- | --- |
+| Admin, receptionist | The whole diary |
+| Stylist | Only appointments assigned to them |
+| Customer | Only their own |
+
+A filter is applied **on top of** that scope, never instead of it, so a stylist
+asking for another stylist's appointments gets an empty list rather than a leak.
+
+### The appointment lifecycle
+
+Permitted moves live in `AppointmentStatus::allowedTransitions()`, declared once
+in Phase 1 and never duplicated:
+
+```
+Pending    -> Confirmed, Cancelled, No Show
+Confirmed  -> Checked In, In Progress, Cancelled, No Show
+Checked In -> In Progress, Cancelled, No Show
+In Progress-> Completed, Cancelled
+Completed / Cancelled / No Show -> nothing (terminal)
+```
+
+Whether a move is *valid* and whether an actor *may make it* are separate
+questions. The enum answers the first, `AppointmentPolicy::transition()` the
+second: the desk may make any valid move, while a stylist may start, complete, or
+no-show their own work but not check a customer in, which is a front-desk job.
+
+Each step records its own timestamp, and every change is audited.
+
+**Only cancellation frees a slot.** A completed appointment still occupies the
+diary; that is history, not availability.
+
+### Cancelling and rescheduling
+
+A customer is held to the notice period. The desk is not, because a phone call is
+a legitimate way to cancel late.
+
+Rescheduling **creates a new appointment and cancels the original**, linked by
+`appointments.rescheduled_from_id`. Two reasons: the salon can still see that a
+booking moved and when, which an in-place edit would erase; and the replacement
+goes through exactly the same locked revalidation as any other booking, so a
+reschedule cannot sidestep the double-booking protection. The reference changes,
+which the interface says up front.
+
+If a service has since left the menu, the appointment cannot be moved
+automatically. Rebooking it would quietly change what the customer is getting, so
+the screen explains that and asks for a cancel-and-rebook instead.
+
+### Editing
+
+Only the internal notes. Changing services would change the duration and therefore
+the slot, so that goes through rescheduling rather than a quiet edit. Internal
+notes are never sent to the customer.
 
 ## Customer booking
 
