@@ -22,9 +22,18 @@ class BookingEntryTest extends TestCase
         $this->assertSame(route('booking.start'), session('url.intended'));
     }
 
-    public function test_a_signed_in_user_is_sent_onward_rather_than_to_registration(): void
+    public function test_a_signed_in_customer_is_sent_into_the_booking_flow(): void
     {
         $this->actingAs(User::factory()->create())
+            ->get('/book')
+            ->assertRedirect(route('booking.create'));
+    }
+
+    public function test_salon_staff_are_sent_to_their_dashboard_instead(): void
+    {
+        // Booking on a customer's behalf is appointment management, not this
+        // flow, so staff have nothing to do here.
+        $this->actingAs(User::factory()->stylist()->create())
             ->get('/book')
             ->assertRedirect(route('dashboard'));
     }
@@ -35,8 +44,8 @@ class BookingEntryTest extends TestCase
 
         // The entry point sends them onward, and the active middleware on the
         // destination is what actually ejects them.
-        $this->actingAs($user)->get('/book')->assertRedirect(route('dashboard'));
-        $this->actingAs($user)->get('/dashboard')->assertRedirect(route('login'));
+        $this->actingAs($user)->get('/book')->assertRedirect(route('booking.create'));
+        $this->actingAs($user)->get('/book/new')->assertRedirect(route('login'));
     }
 
     public function test_every_public_page_offers_a_route_into_booking(): void
