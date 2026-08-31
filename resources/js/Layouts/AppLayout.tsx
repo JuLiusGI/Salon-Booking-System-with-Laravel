@@ -21,6 +21,8 @@ const NAV_ITEMS: NavItem[] = [
     { label: 'My appointments', href: '/appointments', roles: ['customer'] },
     { label: 'Calendar', href: '/manage/calendar', roles: ['admin', 'receptionist', 'stylist'] },
     { label: 'Appointments', href: '/manage/appointments', roles: ['admin', 'receptionist', 'stylist'] },
+    { label: 'Check in', href: '/manage/check-in', roles: ['admin', 'receptionist', 'stylist'] },
+    { label: 'Customers', href: '/manage/customers', roles: ['admin', 'receptionist'] },
     { label: 'Categories', href: '/admin/categories', roles: ['admin'] },
     { label: 'Services', href: '/admin/services', roles: ['admin'] },
     { label: 'Team', href: '/admin/staff', roles: ['admin'] },

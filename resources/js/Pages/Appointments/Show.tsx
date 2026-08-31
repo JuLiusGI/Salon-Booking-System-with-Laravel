@@ -187,6 +187,27 @@ export default function Show({
                         </div>
                     )}
 
+                    {appointment.is_upcoming && appointment.blocks_availability && (
+                        <div className="rounded-2xl border border-line bg-surface p-6 text-center">
+                            <h2 className="text-base text-ink">Your check-in code</h2>
+                            <p className="mt-1 text-xs text-ink-muted">
+                                Show this at the desk to save looking you up.
+                            </p>
+
+                            <img
+                                src={`/appointments/${appointment.reference}/qr`}
+                                alt={`Check-in code for appointment ${appointment.reference}`}
+                                className="mx-auto mt-4 h-44 w-44"
+                            />
+
+                            <p className="mt-3 text-xs text-ink-muted">
+                                No code on you? Your reference{' '}
+                                <span className="font-medium text-ink">{appointment.reference}</span> works just as
+                                well.
+                            </p>
+                        </div>
+                    )}
+
                     <div className="rounded-2xl border border-line bg-surface p-6">
                         <ButtonLink href="/appointments" variant="secondary" className="w-full">
                             All my appointments

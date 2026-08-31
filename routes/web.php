@@ -6,11 +6,14 @@ use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Booking\AppointmentController;
+use App\Http\Controllers\Booking\AppointmentQrController;
 use App\Http\Controllers\Booking\BookingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Manage\AppointmentActionController;
 use App\Http\Controllers\Manage\AppointmentController as ManageAppointmentController;
 use App\Http\Controllers\Manage\CalendarController;
+use App\Http\Controllers\Manage\CheckInController;
+use App\Http\Controllers\Manage\CustomerController;
 use App\Http\Controllers\Manage\StaffBookingController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\ProfileController;
@@ -32,6 +35,10 @@ Route::get('contact', [PublicPageController::class, 'contact'])->name('contact')
 // the destination, so they land back on the booking flow once signed in.
 Route::get('book', BookingEntryController::class)->name('booking.start');
 
+Route::get('qr/{token}', [CheckInController::class, 'resolve'])
+    ->middleware(['auth', 'active', 'throttle:20,1'])
+    ->name('qr.resolve');
+
 Route::middleware(['auth', 'active'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
 
@@ -42,6 +49,11 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('appointments', [AppointmentController::class, 'index'])->name('appointments.index');
     Route::get('appointments/{appointment:reference}', [AppointmentController::class, 'show'])
         ->name('appointments.show');
+
+    // The QR image itself. Served separately so the raw token never lands in an
+    // Inertia prop or the page source.
+    Route::get('appointments/{appointment:reference}/qr', AppointmentQrController::class)
+        ->name('appointments.qr');
 
     // Acting on an appointment. Shared by customers and staff; who may do what is
     // decided by AppointmentPolicy, not by which screen the request came from.
@@ -55,6 +67,18 @@ Route::middleware(['auth', 'active'])->group(function () {
     // The salon's diary. Stylists reach it too, seeing only their own work.
     Route::prefix('manage')->name('manage.')->group(function () {
         Route::get('calendar', CalendarController::class)->name('calendar');
+
+        // Front desk check-in, by scanned code or typed reference.
+        Route::get('check-in', [CheckInController::class, 'index'])->name('check-in');
+        Route::post('check-in/{appointment:reference}', [CheckInController::class, 'checkIn'])
+            ->name('check-in.store');
+
+        // Customer records.
+        Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
+        Route::get('customers/new', [CustomerController::class, 'create'])->name('customers.create');
+        Route::post('customers/new', [CustomerController::class, 'store'])->name('customers.store');
+        Route::get('customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+        Route::patch('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
 
         Route::get('appointments', [ManageAppointmentController::class, 'index'])->name('appointments.index');
         Route::get('appointments/new', [StaffBookingController::class, 'create'])->name('appointments.create');
