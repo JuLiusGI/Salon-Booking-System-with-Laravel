@@ -82,3 +82,65 @@ export interface SalonHourRow {
     closes_at: string | null;
     is_closed: boolean;
 }
+
+/* Booking -------------------------------------------------------------------- */
+
+export interface BookableService {
+    id: number;
+    name: string;
+    description: string | null;
+    duration_minutes: number;
+    price: string;
+}
+
+export interface BookableCategory {
+    id: number;
+    name: string;
+    services: BookableService[];
+}
+
+export interface Stylist {
+    id: number;
+    name: string;
+    title: string | null;
+    photo_url: string | null;
+}
+
+export interface SlotOption {
+    starts_at: string;
+    ends_at: string;
+    local_date: string;
+    label: string;
+    end_label: string;
+    duration_minutes: number;
+}
+
+export interface AppointmentItemSummary {
+    name: string;
+    price: string;
+    duration_minutes: number;
+}
+
+export type AppointmentStatus =
+    | 'pending'
+    | 'confirmed'
+    | 'checked_in'
+    | 'in_progress'
+    | 'completed'
+    | 'cancelled'
+    | 'no_show';
+
+export interface AppointmentSummary {
+    reference: string;
+    status: AppointmentStatus;
+    status_label: string;
+    is_upcoming: boolean;
+    blocks_availability: boolean;
+    date: string;
+    time: string;
+    starts_at: string;
+    staff_name: string;
+    total_duration_minutes: number;
+    total_price: string;
+    items: AppointmentItemSummary[];
+}

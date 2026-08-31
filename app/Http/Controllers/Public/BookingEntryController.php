@@ -9,9 +9,10 @@ use Illuminate\Http\Request;
 /**
  * The target of every "Book appointment" call to action.
  *
- * This exists so the CTA has one stable URL from the moment the public site is
- * built. Phase 6 replaces the body with the real booking workflow; until then it
- * routes visitors to the step they actually need first, which is an account.
+ * This exists so every call to action has one stable URL. Guests need an account
+ * before they can book, so they are sent to register with the destination
+ * remembered. Salon staff have no customer booking flow of their own, so they go
+ * to their dashboard.
  */
 class BookingEntryController extends Controller
 {
@@ -24,6 +25,12 @@ class BookingEntryController extends Controller
             return redirect()->route('register');
         }
 
-        return redirect()->route('dashboard');
+        // Staff do not book as customers; booking on a customer's behalf is
+        // part of appointment management rather than this flow.
+        if (! $request->user()->isCustomer()) {
+            return redirect()->route('dashboard');
+        }
+
+        return redirect()->route('booking.create');
     }
 }

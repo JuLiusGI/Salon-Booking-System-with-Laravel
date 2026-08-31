@@ -5,6 +5,8 @@ use App\Http\Controllers\Admin\ServiceCategoryController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Booking\AppointmentController;
+use App\Http\Controllers\Booking\BookingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\ProfileController;
@@ -22,11 +24,20 @@ Route::get('gallery', [PublicPageController::class, 'gallery'])->name('gallery')
 Route::get('about', [PublicPageController::class, 'about'])->name('about');
 Route::get('contact', [PublicPageController::class, 'contact'])->name('contact');
 
-// Stable target for the booking call to action. Phase 6 takes this over.
+// Every call to action points here. Guests are sent to register first, keeping
+// the destination, so they land back on the booking flow once signed in.
 Route::get('book', BookingEntryController::class)->name('booking.start');
 
 Route::middleware(['auth', 'active'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
+
+    // Customer booking.
+    Route::get('book/new', [BookingController::class, 'create'])->name('booking.create');
+    Route::post('book/new', [BookingController::class, 'store'])->name('booking.store');
+
+    Route::get('appointments', [AppointmentController::class, 'index'])->name('appointments.index');
+    Route::get('appointments/{appointment:reference}', [AppointmentController::class, 'show'])
+        ->name('appointments.show');
 
     Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');

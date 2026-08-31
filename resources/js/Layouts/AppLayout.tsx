@@ -17,6 +17,8 @@ interface NavItem {
  */
 const NAV_ITEMS: NavItem[] = [
     { label: 'Dashboard', href: '/dashboard', roles: ['admin', 'receptionist', 'stylist', 'customer'] },
+    { label: 'Book', href: '/book', roles: ['customer'] },
+    { label: 'My appointments', href: '/appointments', roles: ['customer'] },
     { label: 'Categories', href: '/admin/categories', roles: ['admin'] },
     { label: 'Services', href: '/admin/services', roles: ['admin'] },
     { label: 'Team', href: '/admin/staff', roles: ['admin'] },
