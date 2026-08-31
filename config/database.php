@@ -59,6 +59,20 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
+
+            /*
+             * Pin the session to UTC so the database agrees with the
+             * application about what "now" means.
+             *
+             * MySQL otherwise takes its clock from the host, which on this
+             * machine is Manila. Every datetime is stored in UTC, so a raw
+             * NOW() or CURRENT_TIMESTAMP would sit eight hours from the values
+             * it was being compared against. Nothing currently relies on the
+             * database clock; this is here so nothing ever can go wrong that
+             * way.
+             */
+            'timezone' => env('DB_TIMEZONE', '+00:00'),
+
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
@@ -79,6 +93,20 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
+
+            /*
+             * Pin the session to UTC so the database agrees with the
+             * application about what "now" means.
+             *
+             * MySQL otherwise takes its clock from the host, which on this
+             * machine is Manila. Every datetime is stored in UTC, so a raw
+             * NOW() or CURRENT_TIMESTAMP would sit eight hours from the values
+             * it was being compared against. Nothing currently relies on the
+             * database clock; this is here so nothing ever can go wrong that
+             * way.
+             */
+            'timezone' => env('DB_TIMEZONE', '+00:00'),
+
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
