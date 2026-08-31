@@ -161,15 +161,33 @@ class BookingAccessTest extends TestCase
             );
     }
 
-    public function test_salon_staff_may_view_an_appointment(): void
+    public function test_the_desk_may_view_any_appointment(): void
     {
         $appointment = Appointment::factory()->create();
 
-        foreach ([UserRole::Admin, UserRole::Receptionist, UserRole::Stylist] as $role) {
+        foreach ([UserRole::Admin, UserRole::Receptionist] as $role) {
             $this->actingAs(User::factory()->role($role)->create())
                 ->get("/appointments/{$appointment->reference}")
                 ->assertOk();
         }
+    }
+
+    public function test_a_stylist_may_view_their_own_work_but_not_another_stylists(): void
+    {
+        $mine = $this->rosteredStylist();
+        $theirs = $this->rosteredStylist();
+
+        $assigned = Appointment::factory()->forStaff($mine)->create();
+        $unassigned = Appointment::factory()->forStaff($theirs)->create();
+
+        $this->actingAs($mine->user)
+            ->get("/appointments/{$assigned->reference}")
+            ->assertOk();
+
+        // Seeing another stylist's client list is not part of doing the work.
+        $this->actingAs($mine->user)
+            ->get("/appointments/{$unassigned->reference}")
+            ->assertForbidden();
     }
 
     public function test_the_appointment_page_never_exposes_the_qr_token(): void
