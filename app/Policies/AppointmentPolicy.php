@@ -42,6 +42,17 @@ class AppointmentPolicy
         return $actor->isStaffMember();
     }
 
+    /**
+     * Salon-wide analytics.
+     *
+     * Narrower than the diary: a stylist's own numbers belong on their own
+     * dashboard, not in a report covering everyone's work.
+     */
+    public function viewReports(User $actor): bool
+    {
+        return $this->runsTheDiary($actor);
+    }
+
     public function view(User $actor, Appointment $appointment): bool
     {
         if ($this->runsTheDiary($actor)) {

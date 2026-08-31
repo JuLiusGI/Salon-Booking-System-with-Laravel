@@ -14,7 +14,9 @@ use App\Http\Controllers\Manage\AppointmentController as ManageAppointmentContro
 use App\Http\Controllers\Manage\CalendarController;
 use App\Http\Controllers\Manage\CheckInController;
 use App\Http\Controllers\Manage\CustomerController;
+use App\Http\Controllers\Manage\ReportController;
 use App\Http\Controllers\Manage\StaffBookingController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Public\BookingEntryController;
@@ -67,6 +69,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     // The salon's diary. Stylists reach it too, seeing only their own work.
     Route::prefix('manage')->name('manage.')->group(function () {
         Route::get('calendar', CalendarController::class)->name('calendar');
+        Route::get('reports', ReportController::class)->name('reports');
 
         // Front desk check-in, by scanned code or typed reference.
         Route::get('check-in', [CheckInController::class, 'index'])->name('check-in');
@@ -90,6 +93,13 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('appointments/{appointment:reference}/status', [AppointmentActionController::class, 'transition'])
             ->name('appointments.status');
     });
+
+    // A person's own notifications.
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllRead'])
+        ->name('notifications.read-all');
+    Route::post('notifications/{id}/read', [NotificationController::class, 'markRead'])
+        ->name('notifications.read');
 
     Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');
