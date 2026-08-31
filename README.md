@@ -3,9 +3,9 @@
 A salon management and online booking application built as a Laravel monolith with
 React rendered through Inertia.
 
-> **Status:** Phase 8 complete. Customers book online; the salon runs its diary,
-> keeps customer records, and checks people in by code or reference.
-> Notifications, the dashboard, and reporting arrive in later phases.
+> **Status:** Phase 9 complete. Customers book online and are notified; the salon
+> runs its diary, keeps customer records, checks people in, and has a dashboard
+> and reports. Security hardening and final QA remain.
 
 ## Stack
 
@@ -244,6 +244,67 @@ are never sent to the browser.
 It currently sends guests to registration, remembering the destination, and signed
 in users onward. **Phase 6 replaces its controller with the real booking flow**,
 so no link needs to change.
+
+## Notifications
+
+Customers are told about their appointments through Laravel notifications, on the
+`database` channel for the in-app list at `/notifications` and `mail` for the
+record. Locally `MAIL_MAILER=log`, so mail lands in `storage/logs/laravel.log`
+rather than leaving the machine.
+
+| Event | Sent |
+| --- | --- |
+| Booked | On every successful booking, including a reschedule's replacement |
+| Confirmed | When the salon confirms |
+| Cancelled | However the cancellation happened |
+| Reminder | The day before, by scheduled command |
+
+Two rules matter here:
+
+- **Nothing is sent until the transaction commits.** Telling a customer about an
+  appointment that then rolled back cannot be undone.
+- **The payload is deliberately thin** — reference, date, time, stylist, service
+  names. Never allergies, internal notes, contact details, or the QR token. A
+  stored notification is rendered in a browser and mirrored into mail, so its
+  shape is pinned by a test.
+
+Being marked in progress or completed sends nothing. The customer was standing
+there for it.
+
+### Reminders
+
+```bash
+php artisan appointments:remind            # send
+php artisan appointments:remind --dry-run  # list who would be reminded
+```
+
+Scheduled hourly. Sending is idempotent — an appointment that already has a
+reminder is skipped — so running twice, or catching up after the scheduler was
+down, never double-sends. Locally the scheduler needs `php artisan schedule:work`;
+in production it is the usual one-line cron calling `schedule:run`.
+
+## Dashboard and reports
+
+`/dashboard` is role-aware: the desk gets the operational picture, a stylist gets
+their own day, a customer gets their own bookings. `/manage/reports` holds the
+analytics, over a date range, and is restricted to admins and receptionists — a
+stylist's own numbers belong on their dashboard, not in a salon-wide report.
+
+**Nothing is described as revenue.** The system takes no payments, so money is
+only ever "booked value" or "completed value", meaning work scheduled and work
+carried out. A test asserts the word does not appear.
+
+Anything grouped by day or hour is grouped in PHP against the salon timezone.
+Appointments are stored in UTC, so grouping in SQL would file a 9am Manila
+appointment under the wrong day, and hard-coding an offset would break the moment
+the salon's timezone changed.
+
+Chart colour follows the visualization guidance rather than taste. Single-series
+marks use the brand primary, since bar length carries the magnitude and colour
+only has to clear contrast. The one two-series chart uses a pair validated for
+colourblind separation; the raw brand colours failed that check, so those two are
+the nearest passing steps in the same hue families. Every chart carries a
+visually hidden table of the same numbers.
 
 ## Customer records and check-in
 
@@ -561,3 +622,8 @@ Two kinds of time are stored differently, deliberately:
 - **One-off instants** (appointments, schedule exceptions) are stored as UTC,
   because they refer to a specific moment. Admin forms accept salon wall-clock
   and convert on the way in.
+
+The MySQL session is pinned to UTC in `config/database.php`. MySQL otherwise
+takes its clock from the host, which here is Manila, so a raw `NOW()` would sit
+eight hours from the UTC values it was compared against. Nothing relies on the
+database clock; the pin is there so nothing can.
