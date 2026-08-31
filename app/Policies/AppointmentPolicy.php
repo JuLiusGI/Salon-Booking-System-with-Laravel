@@ -2,39 +2,147 @@
 
 namespace App\Policies;
 
+use App\Enums\AppointmentStatus;
+use App\Enums\UserRole;
 use App\Models\Appointment;
 use App\Models\User;
+use App\Services\Booking\BookingRuleChecker;
 
 /**
- * Who may see an appointment.
+ * Who may see and act on an appointment.
  *
- * A customer sees only their own. Salon staff see the salon's work, because
- * operating the diary requires it. Broader operational permissions arrive with
- * appointment management in a later phase.
+ * Admins and receptionists run the diary and see all of it. A stylist sees the
+ * work assigned to them and nothing else, which is what MASTER_SPEC section 4
+ * means by "assigned appointments". A customer sees only their own.
  */
 class AppointmentPolicy
 {
     public function viewAny(User $actor): bool
     {
-        // Customers browse their own history; staff browse the salon's.
         return true;
     }
 
     public function view(User $actor, Appointment $appointment): bool
     {
-        if ($actor->isStaffMember()) {
+        if ($this->runsTheDiary($actor)) {
             return true;
+        }
+
+        if ($actor->hasRole(UserRole::Stylist)) {
+            return $this->isAssignedTo($actor, $appointment);
         }
 
         return $appointment->customer_id === $actor->getKey();
     }
 
     /**
-     * Booking is for customers acting for themselves. Staff booking on a
-     * customer's behalf is part of appointment management, not this flow.
+     * Booking through the customer flow. Staff book through the diary instead.
      */
     public function create(User $actor): bool
     {
         return $actor->isCustomer();
+    }
+
+    /**
+     * Creating an appointment on a customer's behalf.
+     */
+    public function createForCustomer(User $actor): bool
+    {
+        return $this->runsTheDiary($actor);
+    }
+
+    /**
+     * Editing the notes attached to an appointment.
+     *
+     * A stylist may annotate their own work; only the desk may edit anyone's.
+     */
+    public function update(User $actor, Appointment $appointment): bool
+    {
+        if ($this->runsTheDiary($actor)) {
+            return true;
+        }
+
+        return $actor->hasRole(UserRole::Stylist)
+            && $this->isAssignedTo($actor, $appointment);
+    }
+
+    /**
+     * Moving an appointment to another status.
+     *
+     * The set of *valid* moves comes from AppointmentStatus. This decides who is
+     * allowed to make a valid move, which is a separate question.
+     */
+    public function transition(User $actor, Appointment $appointment, AppointmentStatus $target): bool
+    {
+        if (! $appointment->status->canTransitionTo($target)) {
+            return false;
+        }
+
+        if ($this->runsTheDiary($actor)) {
+            return true;
+        }
+
+        if (! $actor->hasRole(UserRole::Stylist) || ! $this->isAssignedTo($actor, $appointment)) {
+            return false;
+        }
+
+        // A stylist drives the appointment in front of them, but checking a
+        // customer in is a front-desk job.
+        return in_array($target, [
+            AppointmentStatus::InProgress,
+            AppointmentStatus::Completed,
+            AppointmentStatus::NoShow,
+        ], true);
+    }
+
+    /**
+     * Cancelling.
+     *
+     * The desk may cancel at any point, because a phone call is a legitimate way
+     * to cancel late. A customer cancelling themselves is held to the notice
+     * period, which is the whole reason the rule exists.
+     */
+    public function cancel(User $actor, Appointment $appointment): bool
+    {
+        if (! $appointment->status->canTransitionTo(AppointmentStatus::Cancelled)) {
+            return false;
+        }
+
+        if ($this->runsTheDiary($actor)) {
+            return true;
+        }
+
+        if ($appointment->customer_id !== $actor->getKey()) {
+            return false;
+        }
+
+        return (new BookingRuleChecker)->allowsCancellation($appointment);
+    }
+
+    public function reschedule(User $actor, Appointment $appointment): bool
+    {
+        if (! $appointment->status->blocksAvailability()) {
+            return false;
+        }
+
+        if ($this->runsTheDiary($actor)) {
+            return true;
+        }
+
+        if ($appointment->customer_id !== $actor->getKey()) {
+            return false;
+        }
+
+        return (new BookingRuleChecker)->allowsRescheduling($appointment);
+    }
+
+    private function runsTheDiary(User $actor): bool
+    {
+        return $actor->isAdmin() || $actor->hasRole(UserRole::Receptionist);
+    }
+
+    private function isAssignedTo(User $actor, Appointment $appointment): bool
+    {
+        return $actor->staff !== null && $appointment->staff_id === $actor->staff->getKey();
     }
 }

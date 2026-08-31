@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\AppointmentSource;
 use App\Enums\AppointmentStatus;
+use App\Enums\UserRole;
 use Database\Factories\AppointmentFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -149,6 +150,31 @@ class Appointment extends Model
     public function scopeForStaff(Builder $query, Staff $staff): void
     {
         $query->where('staff_id', $staff->getKey());
+    }
+
+    /**
+     * Narrow a list to what this user is allowed to see.
+     *
+     * Defined once so every list, calendar, and export share the same rule as
+     * AppointmentPolicy::view() rather than each re-deriving it.
+     *
+     * @param  Builder<Appointment>  $query
+     */
+    public function scopeVisibleTo(Builder $query, User $user): void
+    {
+        if ($user->isAdmin() || $user->hasRole(UserRole::Receptionist)) {
+            return;
+        }
+
+        if ($user->hasRole(UserRole::Stylist)) {
+            // A stylist with no staff record sees nothing rather than
+            // everything, which is the safe direction to fail in.
+            $query->where('staff_id', $user->staff?->getKey() ?? 0);
+
+            return;
+        }
+
+        $query->where('customer_id', $user->getKey());
     }
 
     public function getRouteKeyName(): string
