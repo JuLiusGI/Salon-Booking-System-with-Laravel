@@ -1,5 +1,9 @@
+import { useForm } from '@inertiajs/react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
-import { ButtonLink } from '@/Components/Button';
+import Button, { ButtonLink } from '@/Components/Button';
+import { Textarea } from '@/Components/Form';
 import StatusPill from '@/Components/StatusPill';
 import type { AppointmentSummary, PageProps } from '@/types';
 
@@ -19,6 +23,17 @@ export default function Show({
     appointment,
     timezone,
 }: PageProps<{ appointment: AppointmentDetail; timezone: string }>) {
+    const [cancelling, setCancelling] = useState(false);
+    const cancellation = useForm({ reason: '' });
+
+    const confirmCancel = (event: FormEvent) => {
+        event.preventDefault();
+        cancellation.post(`/appointments/${appointment.reference}/cancel`, {
+            preserveScroll: true,
+            onSuccess: () => setCancelling(false),
+        });
+    };
+
     return (
         <AppLayout title="Appointment">
             <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
@@ -120,10 +135,55 @@ export default function Show({
                                 </li>
                             </ul>
 
-                            <p className="mt-4 border-t border-line pt-4 text-xs text-ink-muted">
-                                To cancel or move this appointment, call us on (02) 8000 0000. Doing it here is coming
-                                soon.
-                            </p>
+                            <div className="mt-5 flex flex-col gap-2 border-t border-line pt-5">
+                                {appointment.can_still_reschedule && (
+                                    <ButtonLink
+                                        href={`/appointments/${appointment.reference}/reschedule`}
+                                        variant="secondary"
+                                    >
+                                        Move to another time
+                                    </ButtonLink>
+                                )}
+
+                                {appointment.can_still_cancel && !cancelling && (
+                                    <Button type="button" variant="danger" onClick={() => setCancelling(true)}>
+                                        Cancel this appointment
+                                    </Button>
+                                )}
+
+                                {!appointment.can_still_cancel && !appointment.can_still_reschedule && (
+                                    <p className="text-xs text-ink-muted">
+                                        Both deadlines have passed. Please call us on (02) 8000 0000.
+                                    </p>
+                                )}
+                            </div>
+
+                            {cancelling && (
+                                <form onSubmit={confirmCancel} className="mt-4 space-y-3 border-t border-line pt-4">
+                                    <p className="text-sm text-ink">
+                                        This frees the time for someone else and cannot be undone.
+                                    </p>
+
+                                    <Textarea
+                                        label="Reason"
+                                        name="reason"
+                                        rows={2}
+                                        hint="Optional."
+                                        value={cancellation.data.reason}
+                                        error={cancellation.errors.reason}
+                                        onChange={(e) => cancellation.setData('reason', e.target.value)}
+                                    />
+
+                                    <div className="flex flex-wrap gap-2">
+                                        <Button type="submit" variant="danger" disabled={cancellation.processing}>
+                                            {cancellation.processing ? 'Cancelling...' : 'Yes, cancel it'}
+                                        </Button>
+                                        <Button type="button" variant="secondary" onClick={() => setCancelling(false)}>
+                                            Keep it
+                                        </Button>
+                                    </div>
+                                </form>
+                            )}
                         </div>
                     )}
 

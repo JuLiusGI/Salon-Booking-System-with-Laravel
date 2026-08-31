@@ -8,6 +8,10 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Booking\AppointmentController;
 use App\Http\Controllers\Booking\BookingController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Manage\AppointmentActionController;
+use App\Http\Controllers\Manage\AppointmentController as ManageAppointmentController;
+use App\Http\Controllers\Manage\CalendarController;
+use App\Http\Controllers\Manage\StaffBookingController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Public\BookingEntryController;
@@ -38,6 +42,30 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('appointments', [AppointmentController::class, 'index'])->name('appointments.index');
     Route::get('appointments/{appointment:reference}', [AppointmentController::class, 'show'])
         ->name('appointments.show');
+
+    // Acting on an appointment. Shared by customers and staff; who may do what is
+    // decided by AppointmentPolicy, not by which screen the request came from.
+    Route::post('appointments/{appointment:reference}/cancel', [AppointmentActionController::class, 'cancel'])
+        ->name('appointments.cancel');
+    Route::get('appointments/{appointment:reference}/reschedule', [AppointmentActionController::class, 'editSchedule'])
+        ->name('appointments.reschedule');
+    Route::post('appointments/{appointment:reference}/reschedule', [AppointmentActionController::class, 'reschedule'])
+        ->name('appointments.reschedule.store');
+
+    // The salon's diary. Stylists reach it too, seeing only their own work.
+    Route::prefix('manage')->name('manage.')->group(function () {
+        Route::get('calendar', CalendarController::class)->name('calendar');
+
+        Route::get('appointments', [ManageAppointmentController::class, 'index'])->name('appointments.index');
+        Route::get('appointments/new', [StaffBookingController::class, 'create'])->name('appointments.create');
+        Route::post('appointments/new', [StaffBookingController::class, 'store'])->name('appointments.store');
+        Route::get('appointments/{appointment:reference}', [ManageAppointmentController::class, 'show'])
+            ->name('appointments.show');
+        Route::patch('appointments/{appointment:reference}', [ManageAppointmentController::class, 'update'])
+            ->name('appointments.update');
+        Route::post('appointments/{appointment:reference}/status', [AppointmentActionController::class, 'transition'])
+            ->name('appointments.status');
+    });
 
     Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');
