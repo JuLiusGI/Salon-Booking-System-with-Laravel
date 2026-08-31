@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ScheduleController;
 use App\Http\Controllers\Admin\ServiceCategoryController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\StaffController;
@@ -54,6 +55,20 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('services/{service:id}/edit', [ServiceController::class, 'edit'])->name('services.edit');
         Route::match(['put', 'patch'], 'services/{service:id}', [ServiceController::class, 'update'])->name('services.update');
         Route::delete('services/{service:id}', [ServiceController::class, 'destroy'])->name('services.destroy');
+
+        // Scheduling: everything the availability engine reads.
+        Route::get('schedule/hours', [ScheduleController::class, 'editHours'])->name('schedule.hours');
+        Route::put('schedule/hours', [ScheduleController::class, 'updateHours'])->name('schedule.hours.update');
+
+        Route::get('schedule/rules', [ScheduleController::class, 'editRules'])->name('schedule.rules');
+        Route::put('schedule/rules', [ScheduleController::class, 'updateRules'])->name('schedule.rules.update');
+
+        Route::get('schedule/exceptions', [ScheduleController::class, 'exceptions'])->name('schedule.exceptions');
+        Route::post('schedule/exceptions', [ScheduleController::class, 'storeException'])->name('schedule.exceptions.store');
+        Route::delete('schedule/exceptions/{exception}', [ScheduleController::class, 'destroyException'])->name('schedule.exceptions.destroy');
+
+        Route::get('staff/{staff}/schedule', [ScheduleController::class, 'editStaffSchedule'])->name('staff.schedule');
+        Route::put('staff/{staff}/schedule', [ScheduleController::class, 'updateStaffSchedule'])->name('staff.schedule.update');
 
         Route::get('staff', [StaffController::class, 'index'])->name('staff.index');
         Route::get('staff/create', [StaffController::class, 'create'])->name('staff.create');

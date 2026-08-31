@@ -166,6 +166,12 @@ export default function Index({ staff, filters }: PageProps<StaffIndexProps>) {
                                         >
                                             Edit
                                         </Link>
+                                        <Link
+                                            href={`/admin/staff/${member.id}/schedule`}
+                                            className="text-sm font-medium text-secondary underline underline-offset-4"
+                                        >
+                                            Hours
+                                        </Link>
                                         <ConfirmDelete
                                             url={`/admin/staff/${member.id}`}
                                             subject={member.name}
