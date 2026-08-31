@@ -3,9 +3,9 @@
 A salon management and online booking application built as a Laravel monolith with
 React rendered through Inertia.
 
-> **Status:** Phase 4 complete. Schema, authentication, authorization, the public
-> site, the design system, and catalogue and team management exist. Booking is
-> built in later phases.
+> **Status:** Phase 5 complete. Schema, authentication, authorization, the public
+> site, the design system, catalogue and team management, and the scheduling and
+> availability engine exist. Customer booking is built in Phase 6.
 
 ## Stack
 
@@ -219,6 +219,56 @@ It currently sends guests to registration, remembering the destination, and sign
 in users onward. **Phase 6 replaces its controller with the real booking flow**,
 so no link needs to change.
 
+## Scheduling and availability
+
+Availability is **derived, never stored**. Nothing writes a list of free slots;
+`AvailabilityService` works them out on demand from the current schedule, so a
+change to opening hours or a new booking takes effect immediately.
+
+Constraints are applied in this order, matching `MASTER_SPEC` section 10:
+
+1. Salon opening hours, including special hours, holidays, and closures
+2. The staff member's rostered shifts
+3. Whether they can perform every chosen service
+4. Existing appointments that still hold their slot
+5. Breaks, leave, and days off
+6. Booking rules and buffer time
+
+### Admin screens
+
+| Route | Purpose |
+| --- | --- |
+| `/admin/schedule/hours` | Weekly opening hours |
+| `/admin/schedule/rules` | Booking rules |
+| `/admin/schedule/exceptions` | Leave, breaks, holidays, closures, special hours |
+| `/admin/staff/{id}/schedule` | One staff member's recurring shifts |
+
+### Rules worth knowing
+
+- **Availability is the overlap** of salon hours and staff hours. A shift outside
+  opening hours has no effect.
+- **Cancelled and no-show appointments release their slot.** Every other status
+  holds it.
+- **Buffer is applied to existing appointments, not to the candidate slot**, so
+  turnaround time never pushes the first appointment of the day later.
+- **Comparison is half-open**, so back-to-back appointments do not collide.
+- **Special hours replace** the day's opening times; every other exception type
+  blocks time out of them.
+- Offered times sit on the slot-interval grid, measured from salon-local
+  midnight, so they read as 9:00, 9:15 rather than drifting.
+
+### Double booking
+
+`ConflictDetector` locks the staff row with `SELECT ... FOR UPDATE` inside the
+booking transaction, then re-checks conflicts. A second request for the same
+stylist waits for the first to commit and then sees its appointment.
+
+The alternative, a range lock relying on InnoDB gap locks, is more precise but its
+correctness depends on the isolation level and the index the planner picks.
+Locking the stylist serialises bookings for that one stylist only; two customers
+booking different stylists never contend, which at salon scale costs nothing and
+is far easier to prove correct.
+
 ## Catalogue and team management
 
 Admins manage the catalogue at `/admin/categories`, `/admin/services`, and the
@@ -313,3 +363,12 @@ timezone (`SALON_TIMEZONE`, default `Asia/Manila`), which is the only timezone
 that opening hours, staff schedules, and availability slots are interpreted in.
 Changing it changes presentation and schedule resolution; it does not rewrite
 stored data.
+
+Two kinds of time are stored differently, deliberately:
+
+- **Recurring hours** (opening hours, staff shifts) are stored as wall clock.
+  "We open at nine" stays nine o'clock, and is anchored to a date in the salon's
+  timezone when the engine reads it.
+- **One-off instants** (appointments, schedule exceptions) are stored as UTC,
+  because they refer to a specific moment. Admin forms accept salon wall-clock
+  and convert on the way in.
