@@ -7,6 +7,7 @@ use App\Exceptions\AppointmentTransitionException;
 use App\Models\Appointment;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
+use App\Services\Notifications\AppointmentNotifier;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -19,7 +20,10 @@ use Illuminate\Support\Facades\DB;
  */
 class AppointmentStatusService
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly AppointmentNotifier $notifier,
+    ) {}
 
     /**
      * @throws AppointmentTransitionException
@@ -44,7 +48,7 @@ class AppointmentStatusService
             throw AppointmentTransitionException::notAllowed($from, $target);
         }
 
-        return DB::transaction(function () use ($appointment, $from, $target, $actor, $reason) {
+        $updated = DB::transaction(function () use ($appointment, $from, $target, $actor, $reason) {
             $appointment->status = $target;
 
             // Each status carries the moment it happened. Recording it here
@@ -67,6 +71,28 @@ class AppointmentStatusService
 
             return $appointment;
         });
+
+        // After the commit, so the customer is never told about a change that
+        // then rolled back.
+        $this->announce($updated, $target);
+
+        return $updated;
+    }
+
+    /**
+     * Tell the customer, where the change is one they would want to hear about.
+     *
+     * Deliberately not every transition: being marked in progress or completed
+     * is bookkeeping the customer was present for, and mailing them about it
+     * would be noise.
+     */
+    private function announce(Appointment $appointment, AppointmentStatus $target): void
+    {
+        match ($target) {
+            AppointmentStatus::Confirmed => $this->notifier->confirmed($appointment),
+            AppointmentStatus::Cancelled => $this->notifier->cancelled($appointment),
+            default => null,
+        };
     }
 
     /**

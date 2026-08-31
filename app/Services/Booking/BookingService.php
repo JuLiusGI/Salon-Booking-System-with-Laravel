@@ -11,6 +11,7 @@ use App\Models\Service;
 use App\Models\Staff;
 use App\Models\User;
 use App\Services\Availability\AvailabilityService;
+use App\Services\Notifications\AppointmentNotifier;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -37,6 +38,7 @@ class BookingService
     public function __construct(
         private readonly AvailabilityService $availability,
         private readonly ConflictDetector $conflicts,
+        private readonly AppointmentNotifier $notifier,
     ) {}
 
     /**
@@ -62,7 +64,7 @@ class BookingService
         $duration = $this->availability->totalDuration($services);
         $endsAt = $startsAt->addMinutes($duration);
 
-        return DB::transaction(function () use (
+        $appointment = DB::transaction(function () use (
             $customer, $staff, $services, $startsAt, $endsAt,
             $duration, $notes, $bookedBy, $source, $rules
         ) {
@@ -95,6 +97,12 @@ class BookingService
                 );
             });
         });
+
+        // Only once the booking is committed. Telling a customer about an
+        // appointment that then rolled back cannot be undone.
+        $this->notifier->booked($appointment);
+
+        return $appointment;
     }
 
     /**
