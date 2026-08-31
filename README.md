@@ -3,9 +3,9 @@
 A salon management and online booking application built as a Laravel monolith with
 React rendered through Inertia.
 
-> **Status:** Phase 7 complete. Customers book online; the salon runs its diary
-> with a calendar, status transitions, cancellation, and rescheduling. Customer
-> records, QR, notifications, and reporting arrive in later phases.
+> **Status:** Phase 8 complete. Customers book online; the salon runs its diary,
+> keeps customer records, and checks people in by code or reference.
+> Notifications, the dashboard, and reporting arrive in later phases.
 
 ## Stack
 
@@ -15,6 +15,7 @@ React rendered through Inertia.
 | Frontend | React 19, Inertia.js 2, TypeScript |
 | Build | Vite 7, Tailwind CSS 4 |
 | Database | MySQL 8 (MariaDB via XAMPP) |
+| QR codes | bacon/bacon-qr-code (pure PHP, SVG output) |
 | Local environment | XAMPP (Apache + PHP + MySQL) |
 
 ## Requirements
@@ -218,6 +219,52 @@ are never sent to the browser.
 It currently sends guests to registration, remembering the destination, and signed
 in users onward. **Phase 6 replaces its controller with the real booking flow**,
 so no link needs to change.
+
+## Customer records and check-in
+
+| Route | Purpose |
+| --- | --- |
+| `/manage/customers` | Customer directory (desk only) |
+| `/manage/customers/{id}` | Record, history, and salon notes |
+| `/manage/check-in` | Today's arrivals and reference lookup |
+| `/qr/{token}` | Where a scanned code resolves |
+| `/appointments/{reference}/qr` | The customer's own code, as an image |
+
+### Who may see a customer record
+
+Read access is deliberately wider than write access. A stylist needs to know about
+an allergy with someone in the chair; the record itself is the desk's to maintain.
+
+| Role | Record | Desk notes | History | Edit |
+| --- | --- | --- | --- | --- |
+| Admin, receptionist | Any | Yes | All visits | Yes |
+| Stylist | Only customers they have treated | No | Only visits they worked | No |
+| Customer | Their own profile, at `/profile` | No | Their own | Their own |
+
+The directory flags that a customer has an allergy noted **without showing what it
+is**, so the desk knows to open the record rather than reading health data off a
+list. Every edit is audited, but the values themselves are never written to the
+log.
+
+### QR check-in
+
+The code encodes **nothing but a URL containing a random opaque token** — no name,
+no date, no reference, no id. A photographed or forwarded code reveals nothing on
+its own.
+
+- **The code is a shortcut, never a credential.** Resolving one needs an
+  authenticated staff session; a customer scanning their own code gets a 403.
+- **An unknown code and a code for an appointment you may not see give the same
+  answer**, so scanning cannot be used to probe for valid tokens.
+- **Codes expire against the appointment's own time** rather than storing an
+  expiry: active from a week before until a day after, and never once the
+  appointment reaches a terminal status.
+- Resolution is rate limited, and the image is served `private` so no shared cache
+  can hand one customer's code to another.
+- The image lives on its own endpoint, so the raw token never appears in an
+  Inertia prop or the page source.
+- **Everything works without a code.** Reference lookup is the fallback, and
+  check-in is the same audited status transition either way.
 
 ## Running the diary
 
