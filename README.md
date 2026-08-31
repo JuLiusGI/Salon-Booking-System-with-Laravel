@@ -110,6 +110,31 @@ The application is then available at <http://127.0.0.1:8000>.
 
 Run `npm run dev` in a second terminal while developing so assets hot-reload.
 
+## If the page loads blank
+
+A beige page with nothing on it means the CSS loaded but React did not mount.
+Two causes, both quick:
+
+**A stale Vite marker.** Starting `npm run dev` writes `public/hot`; if that
+process is killed without cleaning up, the file remains and Laravel keeps pointing
+every script tag at a dev server that is no longer running. Delete it:
+
+```bash
+rm public/hot
+```
+
+**A stale compiled view.** Blade compiles to a cache, so upgrading a package that
+ships Blade directives can leave the old output in place. Clear it:
+
+```bash
+php artisan optimize:clear
+npm run build
+```
+
+The Inertia client and server majors must also match: `@inertiajs/react` and
+`inertiajs/inertia-laravel` are both on v3. A mismatch there produces exactly the
+same blank page, because the client cannot read the payload the server sends.
+
 ## Commands
 
 | Command | Purpose |
