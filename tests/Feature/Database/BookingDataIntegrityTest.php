@@ -4,8 +4,10 @@ namespace Tests\Feature\Database;
 
 use App\Models\Appointment;
 use App\Models\AppointmentItem;
+use App\Models\SalonHour;
 use App\Models\Service;
 use App\Models\Staff;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -147,5 +149,53 @@ class BookingDataIntegrityTest extends TestCase
             ->get();
 
         $this->assertCount(0, $mismatched, 'Seeded totals must equal the sum of their items.');
+    }
+
+    public function test_seeded_appointments_fall_inside_the_seeded_opening_hours(): void
+    {
+        $this->seed();
+
+        $timezone = config('salon.timezone');
+
+        $hours = SalonHour::query()->get()->keyBy('day_of_week');
+
+        foreach (Appointment::query()->blocking()->get() as $appointment) {
+            $start = CarbonImmutable::parse($appointment->starts_at)->setTimezone($timezone);
+            $end = CarbonImmutable::parse($appointment->ends_at)->setTimezone($timezone);
+
+            $day = $hours->get($start->dayOfWeek);
+
+            $this->assertNotNull($day, "No opening hours for day {$start->dayOfWeek}.");
+            $this->assertFalse($day->is_closed, "Appointment {$appointment->reference} falls on a closed day.");
+
+            $this->assertGreaterThanOrEqual(
+                substr((string) $day->opens_at, 0, 5),
+                $start->format('H:i'),
+                "Appointment {$appointment->reference} starts before the salon opens.",
+            );
+
+            $this->assertLessThanOrEqual(
+                substr((string) $day->closes_at, 0, 5),
+                $end->format('H:i'),
+                "Appointment {$appointment->reference} ends after the salon closes.",
+            );
+        }
+    }
+
+    public function test_no_seeded_appointment_sits_on_top_of_a_break(): void
+    {
+        $this->seed();
+
+        $clashes = \DB::table('appointments as a')
+            ->join('schedule_exceptions as e', function ($join) {
+                $join->on('e.staff_id', '=', 'a.staff_id')
+                    ->where('e.type', '=', 'break')
+                    ->whereColumn('a.starts_at', '<', 'e.ends_at')
+                    ->whereColumn('a.ends_at', '>', 'e.starts_at');
+            })
+            ->whereNotIn('a.status', ['cancelled', 'no_show'])
+            ->count();
+
+        $this->assertSame(0, $clashes, 'Seeded appointments must not overlap a staff break.');
     }
 }

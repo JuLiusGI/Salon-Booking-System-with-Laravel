@@ -10,20 +10,21 @@ use App\Models\AppointmentItem;
 use App\Models\Service;
 use App\Models\Staff;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 class AppointmentSeeder extends Seeder
 {
     /**
-     * Fixed slot starts, spaced two hours apart. Seeded appointments are capped
-     * below two hours so that generated demo data never double-books a staff
-     * member, which would contradict the booking rules the app enforces.
+     * Fixed slot starts in salon-local time, chosen so a seeded appointment can
+     * never run past the stylist's shift, collide with the 12:00 lunch break, or
+     * overlap the next slot. Demo data that contradicted the rules the app
+     * enforces would be worse than no demo data.
      *
      * @var list<int>
      */
-    private const SLOT_HOURS = [9, 11, 14, 16];
+    private const SLOT_HOURS = [9, 13, 15];
 
     private const MAX_SEEDED_DURATION = 115;
 
@@ -52,7 +53,7 @@ class AppointmentSeeder extends Seeder
                     }
 
                     $this->createAppointment(
-                        $day->copy()->setTime($hour, 0),
+                        $day->setTime($hour, 0),
                         $staff,
                         $customers->random(),
                         $services,
@@ -63,21 +64,27 @@ class AppointmentSeeder extends Seeder
     }
 
     /**
-     * @return Collection<int, Carbon>
+     * Salon-local days. Building these in UTC would put every seeded appointment
+     * eight hours out, leaving demo data sitting outside the opening hours it is
+     * meant to illustrate.
+     *
+     * @return Collection<int, CarbonImmutable>
      */
     private function workingDays(): Collection
     {
+        $timezone = config('salon.timezone');
+
         return collect(range(-30, 21))
-            ->map(fn (int $offset) => now()->addDays($offset)->startOfDay())
+            ->map(fn (int $offset) => CarbonImmutable::now($timezone)->addDays($offset)->startOfDay())
             // The salon is closed on Sundays, matching SalonHoursSeeder.
-            ->reject(fn (Carbon $date) => $date->dayOfWeek === Carbon::SUNDAY)
+            ->reject(fn (CarbonImmutable $date) => $date->dayOfWeek === CarbonImmutable::SUNDAY)
             ->values();
     }
 
     /**
      * @param  Collection<int, Service>  $services
      */
-    private function createAppointment(Carbon $start, Staff $staff, User $customer, $services): void
+    private function createAppointment(CarbonImmutable $start, Staff $staff, User $customer, $services): void
     {
         // One or two services, kept within the slot length.
         $chosen = $services->random(min(fake()->numberBetween(1, 2), $services->count()));
@@ -99,8 +106,8 @@ class AppointmentSeeder extends Seeder
         $appointment = Appointment::factory()->create([
             'customer_id' => $customer->id,
             'staff_id' => $staff->id,
-            'starts_at' => $start,
-            'ends_at' => $start->copy()->addMinutes($duration),
+            'starts_at' => $start->utc(),
+            'ends_at' => $start->addMinutes($duration)->utc(),
             'status' => $this->statusFor($isPast),
             'source' => fake()->randomElement(AppointmentSource::cases()),
             'total_duration_minutes' => $duration,
@@ -114,7 +121,7 @@ class AppointmentSeeder extends Seeder
 
         if ($appointment->status === AppointmentStatus::Cancelled) {
             $appointment->forceFill([
-                'cancelled_at' => $start->copy()->subDay(),
+                'cancelled_at' => $start->subDay()->utc(),
                 'cancellation_reason' => 'Customer rescheduled by phone',
             ])->save();
         }

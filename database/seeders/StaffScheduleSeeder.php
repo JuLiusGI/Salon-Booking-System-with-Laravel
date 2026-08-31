@@ -6,15 +6,21 @@ use App\Enums\ScheduleExceptionType;
 use App\Models\ScheduleException;
 use App\Models\Staff;
 use App\Models\StaffAvailability;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 
 class StaffScheduleSeeder extends Seeder
 {
     public function run(): void
     {
+        // Wall-clock times mean nothing without a timezone. Building them in the
+        // salon's own zone is what keeps seeded data consistent with the opening
+        // hours it ships alongside.
+        $timezone = config('salon.timezone');
+
         foreach (Staff::query()->active()->get() as $staff) {
-            // Tuesday through Saturday, matching the salon being closed Sundays.
-            foreach ([2, 3, 4, 5, 6] as $day) {
+            // Monday through Saturday, matching the salon being closed Sundays.
+            foreach ([1, 2, 3, 4, 5, 6] as $day) {
                 StaffAvailability::create([
                     'staff_id' => $staff->id,
                     'day_of_week' => $day,
@@ -25,13 +31,13 @@ class StaffScheduleSeeder extends Seeder
 
                 // Daily lunch break, expressed as a recurring-style exception on
                 // the next occurrence of that weekday.
-                $date = now()->startOfWeek()->addDays($day - 1);
+                $date = CarbonImmutable::now($timezone)->startOfWeek()->addDays($day - 1);
 
                 ScheduleException::create([
                     'staff_id' => $staff->id,
                     'type' => ScheduleExceptionType::Break,
-                    'starts_at' => $date->copy()->setTime(12, 0),
-                    'ends_at' => $date->copy()->setTime(13, 0),
+                    'starts_at' => $date->setTime(12, 0)->utc(),
+                    'ends_at' => $date->setTime(13, 0)->utc(),
                     'reason' => 'Lunch break',
                 ]);
             }
@@ -42,8 +48,8 @@ class StaffScheduleSeeder extends Seeder
         ScheduleException::create([
             'staff_id' => null,
             'type' => ScheduleExceptionType::Holiday,
-            'starts_at' => now()->addDays(20)->startOfDay(),
-            'ends_at' => now()->addDays(20)->endOfDay(),
+            'starts_at' => CarbonImmutable::now($timezone)->addDays(20)->startOfDay()->utc(),
+            'ends_at' => CarbonImmutable::now($timezone)->addDays(20)->endOfDay()->utc(),
             'reason' => 'Public holiday',
         ]);
 
@@ -53,8 +59,8 @@ class StaffScheduleSeeder extends Seeder
             ScheduleException::create([
                 'staff_id' => $onLeave->id,
                 'type' => ScheduleExceptionType::Leave,
-                'starts_at' => now()->addDays(10)->startOfDay(),
-                'ends_at' => now()->addDays(12)->endOfDay(),
+                'starts_at' => CarbonImmutable::now($timezone)->addDays(10)->startOfDay()->utc(),
+                'ends_at' => CarbonImmutable::now($timezone)->addDays(12)->endOfDay()->utc(),
                 'reason' => 'Annual leave',
             ]);
         }
