@@ -3,9 +3,8 @@
 A salon management and online booking application built as a Laravel monolith with
 React rendered through Inertia.
 
-> **Status:** Phase 5 complete. Schema, authentication, authorization, the public
-> site, the design system, catalogue and team management, and the scheduling and
-> availability engine exist. Customer booking is built in Phase 6.
+> **Status:** Phase 6 complete. Customers can book online end to end. Operational
+> appointment management, the calendar, and status transitions arrive in Phase 7.
 
 ## Stack
 
@@ -218,6 +217,54 @@ are never sent to the browser.
 It currently sends guests to registration, remembering the destination, and signed
 in users onward. **Phase 6 replaces its controller with the real booking flow**,
 so no link needs to change.
+
+## Customer booking
+
+| Route | Purpose |
+| --- | --- |
+| `/book` | Entry point every call to action uses |
+| `/book/new` | The booking flow |
+| `/appointments` | A customer's upcoming and past appointments |
+| `/appointments/{reference}` | Appointment detail and booking confirmation |
+
+The flow is one page: choose services, choose a stylist, choose a time. Stylists
+are filtered to those who can perform **every** chosen service, and availability
+is fetched by Inertia partial reload rather than a separate API, so slots always
+come from the same engine that will revalidate the booking.
+
+### What makes a booking safe
+
+`BookingService` runs in a fixed order, and the order is the point:
+
+1. Cheap checks first, outside the transaction, so a hopeless request never takes
+   a lock.
+2. Open a transaction and lock the stylist row.
+3. **Revalidate after taking the lock.** The slot was true when it was rendered
+   and may not be true now.
+4. Write the appointment and its items together, or write nothing.
+
+Step 3 does two separate checks: a conflict check against other appointments, and
+a full re-run of the availability engine. The second catches a break, closure, or
+roster change made while the customer was deciding, which is not an appointment
+clash and so would otherwise slip through.
+
+The stylist is also re-read inside the lock, in case they were deactivated between
+the form loading and the request arriving.
+
+### Other guarantees
+
+- **Appointments are addressed by reference**, not by id, so a customer cannot
+  walk the table by incrementing a number.
+- **The QR token is never sent to the browser**, on any page.
+- **`customer_id` and `status` are ignored if posted.** The appointment belongs to
+  whoever is signed in and always starts as pending.
+- **Items snapshot the service** as booked, so a later price change never rewrites
+  what a past appointment cost.
+- A refused booking is shown as a form error, not a server error, because being
+  beaten to a slot is an expected outcome rather than a fault.
+
+Staff do not book through this flow. Booking on a customer's behalf is part of
+appointment management in Phase 7, so `/book` sends staff to their dashboard.
 
 ## Scheduling and availability
 
