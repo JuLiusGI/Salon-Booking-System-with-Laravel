@@ -15,10 +15,17 @@ interface SectionHeadingProps {
     description?: string;
     align?: 'left' | 'center';
     id?: string;
+    /**
+     * The heading level this renders as. A page's opening heading passes 1 so
+     * every page has exactly one h1; every later heading on the page keeps the
+     * default 2. The visual size is set by the classes and does not change.
+     */
+    level?: 1 | 2;
 }
 
-export function SectionHeading({ eyebrow, title, description, align = 'left', id }: SectionHeadingProps) {
+export function SectionHeading({ eyebrow, title, description, align = 'left', id, level = 2 }: SectionHeadingProps) {
     const alignment = align === 'center' ? 'text-center mx-auto' : 'text-left';
+    const Heading = level === 1 ? 'h1' : 'h2';
 
     return (
         <div className={`max-w-2xl ${alignment}`}>
@@ -26,9 +33,9 @@ export function SectionHeading({ eyebrow, title, description, align = 'left', id
                 <p className="text-xs font-semibold tracking-[0.18em] text-secondary uppercase">{eyebrow}</p>
             )}
 
-            <h2 id={id} className="mt-3 text-3xl leading-tight text-ink sm:text-4xl">
+            <Heading id={id} className="mt-3 text-3xl leading-tight text-ink sm:text-4xl">
                 {title}
-            </h2>
+            </Heading>
 
             {description && <p className="mt-4 text-base leading-relaxed text-ink-muted">{description}</p>}
         </div>

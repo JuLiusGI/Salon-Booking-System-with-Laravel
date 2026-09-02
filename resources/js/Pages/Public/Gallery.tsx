@@ -8,6 +8,7 @@ export default function Gallery({ images }: PageProps<{ images: GalleryItem[] }>
             <section className="border-b border-line bg-surface">
                 <Container className="py-16 sm:py-20">
                     <SectionHeading
+                        level={1}
                         eyebrow="Gallery"
                         title="A look around"
                         description="The room, the light, and a little of the work that leaves it."

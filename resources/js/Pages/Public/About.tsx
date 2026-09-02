@@ -26,6 +26,7 @@ export default function About() {
             <section className="border-b border-line bg-surface">
                 <Container className="py-16 sm:py-20">
                     <SectionHeading
+                        level={1}
                         eyebrow="About us"
                         title="A small salon that runs on time"
                         description="We opened with one idea: an appointment should feel unhurried, and it should start when it was booked to start."

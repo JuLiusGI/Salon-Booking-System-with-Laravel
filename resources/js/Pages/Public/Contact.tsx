@@ -22,6 +22,7 @@ export default function Contact({ hours }: PageProps<{ hours: SalonHourRow[] }>)
             <section className="border-b border-line bg-surface">
                 <Container className="py-16 sm:py-20">
                     <SectionHeading
+                        level={1}
                         eyebrow="Contact"
                         title="Find us, or just book online"
                         description="The fastest way to get a slot is to book directly. For anything else, call or email and we will come back to you."

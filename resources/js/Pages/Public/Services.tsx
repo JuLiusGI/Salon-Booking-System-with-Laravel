@@ -29,6 +29,7 @@ export default function Services({ categories }: PageProps<{ categories: PublicC
             <section className="border-b border-line bg-surface">
                 <Container className="py-16 sm:py-20">
                     <SectionHeading
+                        level={1}
                         eyebrow="Service menu"
                         title="Every service, with the time and price it actually takes"
                         description="Durations are what we block out in the diary, so the slot you book is the slot you get."

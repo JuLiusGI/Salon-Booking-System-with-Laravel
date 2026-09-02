@@ -12,6 +12,7 @@ export default function Team({ staff }: PageProps<{ staff: PublicStaff[] }>) {
             <section className="border-b border-line bg-surface">
                 <Container className="py-16 sm:py-20">
                     <SectionHeading
+                        level={1}
                         eyebrow="The team"
                         title="The people behind the chair"
                         description="Every stylist here can be requested by name when you book."
