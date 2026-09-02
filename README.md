@@ -572,9 +572,13 @@ Roles are a single `role` column on `users`, cast to the `UserRole` enum:
 | Role | Can reach |
 | --- | --- |
 | `admin` | Everything, including `/admin/*` |
-| `receptionist` | Dashboard and profile (operational screens come later) |
-| `stylist` | Dashboard and profile (schedule views come later) |
-| `customer` | Dashboard and profile |
+| `receptionist` | The whole diary, customer records, reports, check-in |
+| `stylist` | The diary, but scoped to their own appointments |
+| `customer` | Booking, their own appointments, notifications, profile |
+
+`tests/Feature/Security/RouteAuthorizationTest.php` holds this table as a matrix
+and asserts every protected route against every role, so the documentation and
+the enforcement cannot drift apart.
 
 Authorization is enforced server-side in three layers:
 
@@ -587,14 +591,24 @@ link is never a security boundary** — every route is independently protected.
 
 Security behaviour worth knowing:
 
-- Login is rate limited to 5 attempts per email and IP combination.
+- Login is rate limited to 5 attempts per email and IP combination, with a
+  further 30 per minute per IP to catch a spray across many addresses.
+- Registration is capped at 10 per hour per IP.
 - Password reset and the reset request endpoint are throttled to 6 per minute.
+- QR resolution is capped at 20 per minute, so a token cannot be guessed at speed.
 - The session id is regenerated on login and invalidated on logout.
 - A password reset rotates the remember token, killing old "remember me" cookies.
 - Forgot-password returns the same response for unknown addresses, so it cannot
   be used to discover which emails have accounts.
 - `role` and `is_active` are not mass assignable; both are administrative actions.
-- Role changes and account activation are written to `audit_logs`.
+- Role changes, account activation, and password changes are written to
+  `audit_logs`, never with the password itself.
+- Sessions are bound to the password they were opened with
+  (`AuthenticateSession`), so changing a password signs out every other session.
+  This matters because changing a password is what someone does when they think
+  another person is already in the account.
+- Filter parameters in the query string are treated as untrusted: an unreadable
+  date or an unknown enum drops the filter rather than raising a 500.
 - An admin cannot change their own role, deactivate themselves, or remove the
   last remaining active administrator.
 
@@ -605,6 +619,36 @@ adding that interface and the verification routes.
 
 In local development `MAIL_MAILER=log`, so password reset links appear in
 `storage/logs/laravel.log` rather than being delivered.
+
+## Errors and going to production
+
+Failures are answered two ways, because a page can be reached two ways. A plain
+browser request gets a Blade page from `resources/views/errors`; an Inertia XHR
+gets the `Error` page component, so the person stays inside the app instead of
+being handed a raw HTML document in a modal. The status code is preserved either
+way, and 419 is turned into a "your session expired" message rather than an
+error screen.
+
+The Blade error pages carry their **own inlined CSS**. An error page is exactly
+the moment the built stylesheet may be missing — a failed deploy, a cleared
+`public/build` — so it must not depend on Vite having produced anything. That is
+also why the brand colours appear there as literal hex values.
+
+Before deploying, set these in the production `.env`:
+
+| Variable | Value | Why |
+| --- | --- | --- |
+| `APP_DEBUG` | `false` | With it on, a stack trace and the database credentials are shown to whoever triggers the error. |
+| `APP_ENV` | `production` | |
+| `SESSION_SECURE_COOKIE` | `true` | Over HTTPS, keeps the session cookie off plaintext requests. |
+| `APP_URL` | the real URL | Used to build links in notification mail. |
+
+`tests/Feature/Security/ErrorHandlingTest.php` asserts that with `APP_DEBUG` off
+an exception's message, class, and trace all stay out of the response.
+
+Then run `php artisan config:cache route:cache view:cache` and
+`npm run build`. If you later change `.env`, re-run `config:cache` — a cached
+config ignores the file.
 
 ## Time and timezone
 
