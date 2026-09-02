@@ -48,15 +48,15 @@ class AppointmentController extends Controller
                 'items',
                 fn ($i) => $i->where('service_id', $id),
             ))
-            ->when($request->string('from')->toString(), fn ($q, string $d) => $q->where(
+            ->when($this->parseDate($request->string('from')->toString(), $timezone), fn ($q, CarbonImmutable $d) => $q->where(
                 'starts_at',
                 '>=',
-                CarbonImmutable::parse($d, $timezone)->startOfDay()->utc(),
+                $d->startOfDay()->utc(),
             ))
-            ->when($request->string('to')->toString(), fn ($q, string $d) => $q->where(
+            ->when($this->parseDate($request->string('to')->toString(), $timezone), fn ($q, CarbonImmutable $d) => $q->where(
                 'starts_at',
                 '<=',
-                CarbonImmutable::parse($d, $timezone)->endOfDay()->utc(),
+                $d->endOfDay()->utc(),
             ))
             ->when($request->string('search')->toString(), function ($q, string $term) {
                 $q->where(function ($sub) use ($term) {
@@ -168,6 +168,26 @@ class AppointmentController extends Controller
     /**
      * @return array<string, mixed>
      */
+    /**
+     * A date typed into the filter bar, or null when it is absent or unreadable.
+     *
+     * These arrive in the query string, so a malformed one is ordinary traffic
+     * rather than an exceptional case: the filter is dropped and the list still
+     * renders.
+     */
+    private function parseDate(string $value, string $timezone): ?CarbonImmutable
+    {
+        if ($value === '') {
+            return null;
+        }
+
+        try {
+            return CarbonImmutable::parse($value, $timezone);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     private function row(Appointment $appointment): array
     {
         $timezone = config('salon.timezone');

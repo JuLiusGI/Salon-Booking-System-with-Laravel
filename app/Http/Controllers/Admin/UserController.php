@@ -21,8 +21,10 @@ class UserController extends Controller
         $this->authorize('viewAny', User::class);
 
         $users = User::query()
-            ->when($request->string('role')->toString(), function ($query, string $role) {
-                $query->where('role', UserRole::from($role));
+            // tryFrom, not from: the role arrives in the query string, and an
+            // unknown value must simply match nothing rather than raise.
+            ->when(UserRole::tryFrom($request->string('role')->toString()), function ($query, UserRole $role) {
+                $query->where('role', $role);
             })
             ->when($request->string('search')->toString(), function ($query, string $search) {
                 $query->where(function ($q) use ($search) {
