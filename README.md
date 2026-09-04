@@ -3,9 +3,10 @@
 A salon management and online booking application built as a Laravel monolith with
 React rendered through Inertia.
 
-> **Status:** Phase 9 complete. Customers book online and are notified; the salon
-> runs its diary, keeps customer records, checks people in, and has a dashboard
-> and reports. Security hardening and final QA remain.
+> **Status:** V1 complete. Customers book online and are notified; the salon runs
+> its diary, keeps customer records, checks people in, and has a dashboard and
+> reports. The system has been through a security pass and final QA, and the
+> deployment steps below have been run end to end from a clean clone.
 
 ## Stack
 
@@ -241,9 +242,9 @@ only name, title, and bio; staff email addresses, phone numbers, and hire dates
 are never sent to the browser.
 
 `/book` is the single stable target for every "Book appointment" call to action.
-It currently sends guests to registration, remembering the destination, and signed
-in users onward. **Phase 6 replaces its controller with the real booking flow**,
-so no link needs to change.
+It sends guests to registration, remembering the destination, and signed in
+customers straight into the booking flow. Because every call to action points at
+this one route, the flow behind it changed without a single link changing.
 
 ## Notifications
 
@@ -378,8 +379,8 @@ asking for another stylist's appointments gets an empty list rather than a leak.
 
 ### The appointment lifecycle
 
-Permitted moves live in `AppointmentStatus::allowedTransitions()`, declared once
-in Phase 1 and never duplicated:
+Permitted moves live in `AppointmentStatus::allowedTransitions()`, declared in
+one place and never duplicated:
 
 ```
 Pending    -> Confirmed, Cancelled, No Show
@@ -466,8 +467,9 @@ the form loading and the request arriving.
 - A refused booking is shown as a form error, not a server error, because being
   beaten to a slot is an expected outcome rather than a fault.
 
-Staff do not book through this flow. Booking on a customer's behalf is part of
-appointment management in Phase 7, so `/book` sends staff to their dashboard.
+Staff do not book through this flow. Booking on a customer's behalf is a
+front-desk job with its own screen at `/manage/appointments/new`, so `/book`
+sends staff to their dashboard instead.
 
 ## Scheduling and availability
 
@@ -613,14 +615,14 @@ Security behaviour worth knowing:
   last remaining active administrator.
 
 Email verification is **not** enabled. `MASTER_SPEC` section 16 makes it
-conditional, and it is not in the Phase 2 task list, so registration completes
-without it. `User` does not implement `MustVerifyEmail`; enabling it later means
+conditional and the salon does not require it, so registration completes without
+it. `User` does not implement `MustVerifyEmail`; enabling it later means
 adding that interface and the verification routes.
 
 In local development `MAIL_MAILER=log`, so password reset links appear in
 `storage/logs/laravel.log` rather than being delivered.
 
-## Errors and going to production
+## Errors and production settings
 
 Failures are answered two ways, because a page can be reached two ways. A plain
 browser request gets a Blade page from `resources/views/errors`; an Inertia XHR
@@ -646,9 +648,113 @@ Before deploying, set these in the production `.env`:
 `tests/Feature/Security/ErrorHandlingTest.php` asserts that with `APP_DEBUG` off
 an exception's message, class, and trace all stay out of the response.
 
-Then run `php artisan config:cache route:cache view:cache` and
-`npm run build`. If you later change `.env`, re-run `config:cache` — a cached
-config ignores the file.
+`tests/Feature/Security/ErrorHandlingTest.php` asserts that with `APP_DEBUG` off
+an exception's message, class, and trace all stay out of the response.
+
+## Deployment
+
+### Checklist
+
+Run in this order. Steps 6 and 7 are what make the new code live, so anything
+that can fail should fail before them.
+
+```bash
+# 1. Get the code
+git pull --ff-only
+
+# 2. Dependencies, without dev packages
+composer install --no-dev --optimize-autoloader
+npm ci
+
+# 3. Build the frontend
+npm run build
+
+# 4. Database
+php artisan migrate --force          # --force: production refuses to migrate interactively
+
+# 5. Storage symlink (first deploy only, or if public/storage is missing)
+php artisan storage:link
+
+# 6. Cache configuration, routes, and views
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+# 7. Confirm
+php artisan about                    # check env=production, debug=false
+curl -f https://your-domain/up       # health endpoint, non-zero exit if unhealthy
+```
+
+**After changing `.env`, re-run `php artisan config:cache`.** A cached config
+ignores the file, which makes an edited variable look like it did nothing.
+
+To undo a bad release: check out the previous tag, re-run steps 2, 3 and 6, and
+roll the database back only if that release added migrations
+(`php artisan migrate:rollback --step=1`). Migrations are the part that does not
+undo cleanly, so take the backup in the next section first.
+
+### The scheduler
+
+One cron entry, which is what drives appointment reminders:
+
+```cron
+* * * * * cd /path/to/salon-booking-system && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Without it, nothing else breaks — customers simply stop receiving day-before
+reminders, silently. `php artisan schedule:list` shows what is registered.
+
+Locally, `php artisan schedule:work` does the same job in the foreground.
+
+### Queue workers
+
+**None are needed.** Notifications use the `Queueable` trait but do not implement
+`ShouldQueue`, so they are sent during the request that triggers them. That is a
+deliberate simplification for V1: nothing is lost when no worker is running,
+which is one less thing to forget.
+
+The trade-off is that a slow mail server slows the request that sends the mail.
+If that becomes noticeable, add `implements ShouldQueue` to
+`AppointmentNotification` **and** run `php artisan queue:work` as a supervised
+process — one without the other means notifications stop arriving.
+
+### Caches
+
+`CACHE_STORE=database` and `SESSION_DRIVER=database`, so both use the tables
+created by the migrations and need no extra service. The rate limiters in
+`routes/auth.php` count through the cache store, so clearing the cache also
+clears anyone's throttle.
+
+## Backup and recovery
+
+Three things carry state. Losing any one of them loses real data.
+
+| What | Where | Why it matters |
+| --- | --- | --- |
+| The database | MySQL `salon_booking` | Every appointment, customer, and audit record. |
+| Uploaded images | `storage/app/public` | Service photos and staff portraits. Not in Git. |
+| `.env` | project root | Holds `APP_KEY`. **Lose it and encrypted session data cannot be read.** |
+
+`public/storage` is only a symlink to `storage/app/public`; back up the target,
+not the link. `vendor/`, `node_modules/` and `public/build` are all rebuildable
+and need no backup.
+
+```bash
+# Back up
+mysqldump -u root salon_booking > backup-$(date +%F).sql
+tar -czf uploads-$(date +%F).tar.gz storage/app/public
+
+# Restore
+mysql -u root salon_booking < backup-2026-09-04.sql
+tar -xzf uploads-2026-09-04.tar.gz
+php artisan storage:link       # if public/storage is missing
+php artisan optimize:clear     # drop caches built against the old data
+```
+
+Verify a backup by restoring it into a scratch database and running
+`php artisan migrate:status` against it — an untested backup is a guess. Take one
+before every deployment that includes a migration.
+
 
 ## Time and timezone
 
