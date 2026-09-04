@@ -25,8 +25,8 @@ return new class extends Migration
             $table->unsignedSmallInteger('service_duration_minutes');
 
             // Reserved for a future requirement where different staff perform
-            // different services within one appointment. V1 leaves this null and
-            // uses the appointment's staff member for every item.
+            // different services within one appointment. This is left null for
+            // now, and the appointment's staff member is used for every item.
             $table->foreignId('staff_id')->nullable()->constrained('staff')->nullOnDelete();
 
             $table->unsignedSmallInteger('position')->default(0);

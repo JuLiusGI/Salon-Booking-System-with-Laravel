@@ -3,9 +3,8 @@
 A salon management and online booking application built as a Laravel monolith with
 React rendered through Inertia.
 
-> **Status:** V1 complete. Customers book online and are notified; the salon runs
-> its diary, keeps customer records, checks people in, and has a dashboard and
-> reports. The system has been through a security pass and final QA, and the
+> Customers book online and are notified; the salon runs its diary, keeps
+> customer records, checks people in, and has a dashboard and reports. The
 > deployment steps below have been run end to end from a clean clone.
 
 ## Stack
@@ -648,9 +647,6 @@ Before deploying, set these in the production `.env`:
 `tests/Feature/Security/ErrorHandlingTest.php` asserts that with `APP_DEBUG` off
 an exception's message, class, and trace all stay out of the response.
 
-`tests/Feature/Security/ErrorHandlingTest.php` asserts that with `APP_DEBUG` off
-an exception's message, class, and trace all stay out of the response.
-
 ## Deployment
 
 ### Checklist
@@ -710,8 +706,8 @@ Locally, `php artisan schedule:work` does the same job in the foreground.
 
 **None are needed.** Notifications use the `Queueable` trait but do not implement
 `ShouldQueue`, so they are sent during the request that triggers them. That is a
-deliberate simplification for V1: nothing is lost when no worker is running,
-which is one less thing to forget.
+deliberate simplification: nothing is lost when no worker is running, which is
+one less thing to forget.
 
 The trade-off is that a slow mail server slows the request that sends the mail.
 If that becomes noticeable, add `implements ShouldQueue` to
@@ -754,7 +750,6 @@ php artisan optimize:clear     # drop caches built against the old data
 Verify a backup by restoring it into a scratch database and running
 `php artisan migrate:status` against it — an untested backup is a guess. Take one
 before every deployment that includes a migration.
-
 
 ## Time and timezone
 
