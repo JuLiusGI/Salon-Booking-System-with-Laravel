@@ -12,7 +12,7 @@ React rendered through Inertia.
 | Layer | Technology |
 | --- | --- |
 | Backend | PHP 8.2+, Laravel 12 |
-| Frontend | React 19, Inertia.js 2, TypeScript |
+| Frontend | React 19, Inertia.js 3, TypeScript |
 | Build | Vite 7, Tailwind CSS 4 |
 | Database | MySQL 8 (MariaDB via XAMPP) |
 | QR codes | bacon/bacon-qr-code (pure PHP, SVG output) |
